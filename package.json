@@ -6,8 +6,15 @@
   "scripts": {
     "dev": "vite",
     "build": "tsc -b && vite build",
+    "typecheck": "tsc -b",
+    "smoke": "tsx scripts/smoke.ts",
     "lint": "oxlint",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "tauri": "tauri",
+    "clean:appledouble": "find . -name '._*' -not -path './node_modules/*' -delete",
+    "desktop:dev": "npm run clean:appledouble && CARGO_TARGET_DIR=\"$HOME/Library/Caches/pathwright-target\" tauri dev",
+    "desktop:build": "npm run clean:appledouble && CARGO_TARGET_DIR=\"$HOME/Library/Caches/pathwright-target\" tauri build",
+    "check": "npm run typecheck && npm run smoke"
   },
   "dependencies": {
     "@codemirror/theme-one-dark": "^6.1.3",
@@ -26,6 +33,7 @@
     "@types/react-dom": "^19.3.0",
     "@vitejs/plugin-react": "^6.1.2",
     "oxlint": "^1.90.0",
+    "tsx": "^4.23.15",
     "typescript": "~7.0.2",
     "vite": "^8.3.6"
   }
