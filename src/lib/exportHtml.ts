@@ -1,7 +1,17 @@
+export interface ExportTheme {
+  bg: string
+  panel: string
+  text: string
+  muted: string
+  accent: string
+  border: string
+}
+
 export interface ExportOptions {
   title: string
   json: string
   runtimeSource: string
+  theme?: ExportTheme
 }
 
 const READER_CSS = `
@@ -140,9 +150,13 @@ export function buildStandaloneHtml({
   title,
   json,
   runtimeSource,
+  theme,
 }: ExportOptions): string {
   const safeTitle = escapeHtml(title)
   const storyJson = JSON.stringify(json).replace(/</g, '\\u003c')
+  const themeCss = theme
+    ? `:root{--bg:${theme.bg};--panel:${theme.panel};--text:${theme.text};--muted:${theme.muted};--accent:${theme.accent};--border:${theme.border};}`
+    : ''
   const body = [
     '<main>',
     `<h1>${safeTitle}</h1>`,
@@ -159,7 +173,7 @@ export function buildStandaloneHtml({
     '<meta charset="utf-8" />',
     '<meta name="viewport" content="width=device-width, initial-scale=1" />',
     `<title>${safeTitle}</title>`,
-    `<style>${READER_CSS}</style>`,
+    `<style>${READER_CSS}${themeCss}</style>`,
     '</head>',
     '<body>',
     body,

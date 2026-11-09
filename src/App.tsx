@@ -1,7 +1,8 @@
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState, type CSSProperties } from 'react'
 import CodeMirror from '@uiw/react-codemirror'
 import { InkLanguageSupport } from '@mavnn/codemirror-lang-ink'
 import { oneDark } from '@codemirror/theme-one-dark'
+import { EditorView } from '@codemirror/view'
 import { Story } from 'inkjs/full'
 import sampleStory from './samples/story.ink?raw'
 import { choose, compileInk, readTurn } from './lib/ink'
@@ -13,6 +14,7 @@ import {
 } from './lib/bible'
 import { buildStandaloneHtml } from './lib/exportHtml'
 import inkRuntimeSource from './lib/inkRuntime'
+import { THEMES, getTheme, themePalette } from './lib/themes'
 import { openInkFile, saveHtmlFile, saveInkFile } from './lib/platform'
 import type { Issue, PlayView } from './lib/types'
 import './App.css'
@@ -42,6 +44,7 @@ function App() {
   const [tab, setTab] = useState<Tab>('preview')
   const [toast, setToast] = useState<string | null>(null)
   const storyRef = useRef<Story | null>(null)
+  const editorRef = useRef<EditorView | null>(null)
 
   useEffect(() => {
     const handle = window.setTimeout(() => {
@@ -88,6 +91,22 @@ function App() {
     return match ? match[1].trim() : 'Untitled Story'
   }, [source])
 
+  const theme = useMemo(() => getTheme(bible.theme), [bible.theme])
+  const palette = useMemo(() => themePalette(theme), [theme])
+  const previewStyle = useMemo(
+    () =>
+      ({
+        '--bg': palette.bg,
+        '--panel': palette.panel,
+        '--panel-2': palette.panel2,
+        '--text': palette.text,
+        '--muted': palette.muted,
+        '--border': palette.border,
+        '--accent': palette.accent,
+      }) as CSSProperties,
+    [palette],
+  )
+
   const handleChoose = (index: number) => {
     const story = storyRef.current
     if (!story) return
@@ -99,6 +118,24 @@ function App() {
     const story = new Story(compiledJson)
     storyRef.current = story
     setPlay(readTurn(story))
+  }
+
+  const handleJump = (line: number) => {
+    const view = editorRef.current
+    if (!view) return
+    const target = Math.min(Math.max(1, line), view.state.doc.lines)
+    const info = view.state.doc.line(target)
+    view.dispatch({
+      selection: { anchor: info.from, head: info.to },
+      effects: EditorView.scrollIntoView(info.from, { y: 'center' }),
+    })
+    view.focus()
+  }
+
+  const handleThemeChange = (id: string) => {
+    const next = { ...bible, theme: id }
+    setBible(next)
+    setBibleText(JSON.stringify(next, null, 2))
   }
 
   const handleOpen = async () => {
@@ -122,6 +159,7 @@ function App() {
       title,
       json: compiledJson,
       runtimeSource: inkRuntimeSource,
+      theme: palette,
     })
     const target = await saveHtmlFile(title, html)
     if (target) setToast(`Exported ${target}`)
@@ -192,6 +230,9 @@ function App() {
               theme={oneDark}
               extensions={[InkLanguageSupport()]}
               onChange={(value) => setSource(value)}
+              onCreateEditor={(view) => {
+                editorRef.current = view
+              }}
               basicSetup={{
                 lineNumbers: true,
                 foldGutter: true,
@@ -232,14 +273,20 @@ function App() {
                 canRestart={Boolean(compiledJson)}
                 onChoose={handleChoose}
                 onRestart={handleRestart}
+                themeStyle={previewStyle}
               />
             )}
-            {tab === 'issues' && <IssueList issues={issues} />}
+            {tab === 'issues' && (
+              <IssueList issues={issues} onJump={handleJump} />
+            )}
             {tab === 'bible' && (
               <BibleEditor
                 text={bibleText}
                 error={bibleError}
+                themeId={bible.theme}
+                themeHint={theme.hint}
                 onChange={setBibleText}
+                onThemeChange={handleThemeChange}
                 onApply={handleApplyBible}
               />
             )}
@@ -257,11 +304,18 @@ interface PreviewProps {
   canRestart: boolean
   onChoose: (index: number) => void
   onRestart: () => void
+  themeStyle: CSSProperties
 }
 
-function Preview({ play, canRestart, onChoose, onRestart }: PreviewProps) {
+function Preview({
+  play,
+  canRestart,
+  onChoose,
+  onRestart,
+  themeStyle,
+}: PreviewProps) {
   return (
-    <div className="preview">
+    <div className="preview" style={themeStyle}>
       <div className="story-text">
         {play.text ? (
           play.text.split(/\n{2,}/).map((paragraph, index) => (
@@ -305,7 +359,13 @@ function Preview({ play, canRestart, onChoose, onRestart }: PreviewProps) {
   )
 }
 
-function IssueList({ issues }: { issues: Issue[] }) {
+function IssueList({
+  issues,
+  onJump,
+}: {
+  issues: Issue[]
+  onJump: (line: number) => void
+}) {
   if (issues.length === 0) {
     return <div className="empty">No issues. Nice.</div>
   }
@@ -315,7 +375,15 @@ function IssueList({ issues }: { issues: Issue[] }) {
         <li key={index} className={`issue ${issue.severity}`}>
           <span className="badge">{issue.severity}</span>
           <span className="msg">{issue.message}</span>
-          {issue.line != null && <span className="line">line {issue.line}</span>}
+          {issue.line != null && (
+            <button
+              type="button"
+              className="line"
+              onClick={() => onJump(issue.line ?? 1)}
+            >
+              line {issue.line}
+            </button>
+          )}
         </li>
       ))}
     </ul>
@@ -325,13 +393,38 @@ function IssueList({ issues }: { issues: Issue[] }) {
 interface BibleEditorProps {
   text: string
   error: string | null
+  themeId: string
+  themeHint: string
   onChange: (value: string) => void
+  onThemeChange: (id: string) => void
   onApply: () => void
 }
 
-function BibleEditor({ text, error, onChange, onApply }: BibleEditorProps) {
+function BibleEditor({
+  text,
+  error,
+  themeId,
+  themeHint,
+  onChange,
+  onThemeChange,
+  onApply,
+}: BibleEditorProps) {
   return (
     <div className="bible">
+      <label className="bible-theme">
+        <span>Theme</span>
+        <select
+          value={themeId}
+          onChange={(event) => onThemeChange(event.target.value)}
+        >
+          {THEMES.map((theme) => (
+            <option key={theme.id} value={theme.id}>
+              {theme.title}
+            </option>
+          ))}
+        </select>
+        <span className="muted">{themeHint}</span>
+      </label>
       <p className="muted">
         The story bible is the context Pathwright sends to the LLM. Edit it, then
         Apply. Lint checks tags against this list.
