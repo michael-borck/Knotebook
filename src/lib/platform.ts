@@ -120,6 +120,31 @@ export async function saveHtmlFile(
   return filename
 }
 
+export async function savePackFile(
+  name: string,
+  json: string,
+): Promise<string | null> {
+  const base =
+    name
+      .replace(/[^\w.-]+/g, '-')
+      .replace(/^-+|-+$/g, '')
+      .toLowerCase() || 'story'
+  const filename = base.endsWith('.json') ? base : `${base}.pathwright.json`
+
+  if (isTauri()) {
+    const target = await save({
+      defaultPath: filename,
+      filters: [{ name: 'Pathwright pack', extensions: ['json'] }],
+    })
+    if (!target) return null
+    await writeTextFile(target, json)
+    return target
+  }
+
+  download(filename, new Blob([json], { type: 'application/json' }))
+  return filename
+}
+
 function download(filename: string, blob: Blob): void {
   const url = URL.createObjectURL(blob)
   const anchor = document.createElement('a')

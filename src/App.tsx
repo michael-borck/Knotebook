@@ -26,7 +26,9 @@ import {
   runningInTauri,
   saveHtmlFile,
   saveInkFile,
+  savePackFile,
 } from './lib/platform'
+import { buildPack } from './lib/pack'
 import type { Issue, PlayView } from './lib/types'
 import './App.css'
 
@@ -292,6 +294,21 @@ function App() {
     if (target) setToast(`Exported ${target}`)
   }
 
+  const handleBuildPack = async () => {
+    if (!compiledJson) return
+    const author = source.match(/^#\s*author:\s*(.+)$/im)?.[1].trim() ?? ''
+    const pack = buildPack({
+      title,
+      author,
+      description: bible.premise,
+      theme: bible.theme,
+      storyJson: compiledJson,
+      bible,
+    })
+    const target = await savePackFile(title, JSON.stringify(pack, null, 2))
+    if (target) setToast(`Pack saved ${target}`)
+  }
+
   const handleCopyPrompt = async () => {
     try {
       await navigator.clipboard.writeText(buildLLMPrompt(bible, source))
@@ -329,6 +346,21 @@ function App() {
             disabled={!compiledJson}
           >
             Export HTML
+          </button>
+          <button
+            type="button"
+            onClick={handleBuildPack}
+            disabled={!compiledJson}
+          >
+            Build pack
+          </button>
+          <button
+            type="button"
+            onClick={() => {
+              window.location.href = '?player=1'
+            }}
+          >
+            Player
           </button>
           <button type="button" onClick={handleCopyPrompt}>
             Copy LLM prompt

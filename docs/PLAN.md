@@ -1,6 +1,7 @@
 # Pathwright — build plan
 
-Status: **Phase 0 complete** (editor spike verified). Last updated: 2026-11-09.
+Status: **Phase 0 + 1 complete; Phase 2 first cut (packs + player).** Last
+updated: 2026-11-09.
 
 ## Product
 
@@ -77,6 +78,17 @@ IndexedDB, plays offline, saves progress, renders themes.
 
 Exit: install a pack, play offline, progress survives reload.
 
+**First cut (implemented):**
+- `src/lib/pack.ts` — `pathwright-pack` v1, `buildPack`, `parsePack`.
+- Studio **Build pack** writes `<slug>.pathwright.json` (manifest + compiled
+  story JSON inline).
+- Player at `?player=1` (`src/Player.tsx`): import pack, library, play, restore
+  progress, restart, themes.
+- Storage is `localStorage` for now (`src/lib/storage.ts`); upgrade to IndexedDB
+  when packs carry assets.
+- PWA shell: `public/manifest.webmanifest`, `public/sw.js`, icons; the service
+  worker registers in browsers only (not in Tauri).
+
 ### Phase 3 — store + signing
 Static catalogue, CI validation, sha256 + Ed25519 signature,
 `pathwright-packs` submission repo, `pathwright-store` site, theme filters.
@@ -104,6 +116,8 @@ accessibility.
 | Player tech | Share core; one React codebase for now |
 | Theme IDs | Canonical `kingdom`; alias `mystical → kingdom`; keep `base` |
 | Signing | Ed25519 + sha256 from Phase 3 |
+| Pack storage | `localStorage` in the player for now; IndexedDB when assets land |
+| Player route | Same build, `?player=1`; separate bundle later if needed |
 | LLM | BYO key; Tauri keychain, PWA localStorage; Ollama; diff-based edits |
 | Accounts / backend | None until proven |
 | Export formats | Defer until the pack loop is smooth |
@@ -143,6 +157,7 @@ assets/*           images, audio
   workarounds.
 - Commands: `npm run dev`, `npm run build`, `npm run smoke`,
   `npm run desktop:dev`, `npm run desktop:build`.
+- Studio: `/`; Player: `/?player=1`. The Studio toolbar has a **Player** button.
 
 ## Verification (Phase 0)
 

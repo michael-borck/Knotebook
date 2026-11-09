@@ -1,8 +1,10 @@
 import { readFileSync } from 'node:fs'
+import { Story } from 'inkjs/full'
 import { buildStandaloneHtml } from '../src/lib/exportHtml'
 import { choose, compileInk, readTurn } from '../src/lib/ink'
 import { countWords, lintInk } from '../src/lib/lint'
 import { DEFAULT_BIBLE } from '../src/lib/bible'
+import { buildPack, parsePack } from '../src/lib/pack'
 
 const failures: string[] = []
 function check(name: string, condition: boolean) {
@@ -49,6 +51,30 @@ const literal = segment.slice(0, cut)
 const embeddedText = JSON.parse(literal) as string
 const embeddedStory = JSON.parse(embeddedText) as { inkVersion?: number }
 check('embedded json round-trips', typeof embeddedStory.inkVersion === 'number')
+
+const pack = buildPack({
+  title: 'Smoke Pack',
+  author: 'Tester',
+  theme: 'noir',
+  storyJson: compiled.json,
+})
+check('pack builds', pack.id === 'smoke-pack' && pack.stories.length === 1)
+const parsedPack = parsePack(JSON.stringify(pack))
+check('pack round-trips', parsedPack.pack?.title === 'Smoke Pack')
+check('pack rejects junk', parsePack('{"nope":true}').pack === null)
+
+const playerStory = new Story(pack.stories[0].json)
+const playerFirst = readTurn(playerStory)
+check('player opens pack', playerFirst.choices.length === 2)
+choose(playerStory, 1)
+const savedState = playerStory.state.ToJson()
+const restored = new Story(pack.stories[0].json)
+restored.state.LoadJson(savedState)
+const restoredView = readTurn(restored)
+check(
+  'player restores progress',
+  restoredView.ended || restoredView.choices.length > 0,
+)
 
 if (failures.length) {
   console.error('FAILED:', failures.join(', '))
