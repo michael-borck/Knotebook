@@ -58,8 +58,11 @@ list, story bible, LLM prompt, standalone HTML export, smoke test.
 
 **Verified:** `npm run build`, `npm run smoke`, `cargo check`, dev server 200.
 
-### Phase 1 — real Studio core (next)
+### Phase 1 — real Studio core (done, except assets)
 - Project folder: open folder, file tree with `INCLUDE`, asset folder.
+- **Multi-file compile:** an in-memory inkjs file handler resolves `INCLUDE`
+  from the project's `.ink` files, relative to the root file's folder (as
+  `inklecate` does).
 - Autosave + timestamped backups under `.pathwright/backups/`.
 - `pathwright.bible.json` stored in the project.
 - Theme registry + picker; preview and export follow the theme.

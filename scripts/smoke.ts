@@ -76,6 +76,35 @@ check(
   restoredView.ended || restoredView.choices.length > 0,
 )
 
+const multiFiles: Record<string, string> = {
+  'main.ink':
+    'INCLUDE act1.ink\n\n-> start\n\n=== start ===\nHello from main.\n-> act1\n',
+  'act1.ink': 'INCLUDE act2.ink\n\n=== act1 ===\nAct one.\n-> act2\n',
+  'act2.ink': '=== act2 ===\nAct two.\n-> END\n',
+}
+const multi = compileInk(multiFiles['main.ink'], {
+  files: multiFiles,
+  rootFile: 'main.ink',
+})
+check('multi-file compiles', multi.ok)
+if (multi.ok) {
+  const view = readTurn(multi.story)
+  check(
+    'multi-file plays',
+    view.text.includes('Hello from main') && view.text.includes('Act two'),
+  )
+}
+
+const subFiles: Record<string, string> = {
+  'sub/main.ink': 'INCLUDE act1.ink\n\n-> start\n\n=== start ===\nSub main.\n-> act1\n',
+  'sub/act1.ink': '=== act1 ===\nSub act.\n-> END\n',
+}
+const sub = compileInk(subFiles['sub/main.ink'], {
+  files: subFiles,
+  rootFile: 'sub/main.ink',
+})
+check('subfolder include resolves', sub.ok)
+
 if (failures.length) {
   console.error('FAILED:', failures.join(', '))
   process.exit(1)

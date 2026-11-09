@@ -59,6 +59,7 @@ function App() {
   const [projectRoot, setProjectRoot] = useState<string | null>(null)
   const [projectFiles, setProjectFiles] = useState<string[]>([])
   const [activeFile, setActiveFile] = useState<string | null>(null)
+  const [fileContents, setFileContents] = useState<Record<string, string>>({})
   const [saveState, setSaveState] = useState<
     'idle' | 'saving' | 'saved' | 'unsaved' | 'error'
   >('idle')
@@ -68,7 +69,14 @@ function App() {
 
   useEffect(() => {
     const handle = window.setTimeout(() => {
-      const result = compileInk(source)
+      const input =
+        activeFile && Object.keys(fileContents).length > 0
+          ? {
+              files: { ...fileContents, [activeFile]: source },
+              rootFile: activeFile,
+            }
+          : undefined
+      const result = compileInk(source, input)
       if (result.ok) {
         storyRef.current = result.story
         setCompiledJson(result.json)
@@ -85,7 +93,16 @@ function App() {
       setLintIssues(lintInk(source, bible))
     }, 250)
     return () => window.clearTimeout(handle)
-  }, [source, bible])
+  }, [source, bible, fileContents, activeFile])
+
+  useEffect(() => {
+    if (!activeFile) return
+    setFileContents((previous) =>
+      previous[activeFile] === source
+        ? previous
+        : { ...previous, [activeFile]: source },
+    )
+  }, [source, activeFile])
 
   useEffect(() => {
     if (!toast) return
@@ -197,6 +214,25 @@ function App() {
     relative: string,
     files?: string[],
   ) => {
+    // Flush the outgoing file before switching, so a quick click cannot drop
+    // edits whose autosave timer has not fired yet.
+    if (
+      projectRoot &&
+      activeFile &&
+      runningInTauri() &&
+      source !== lastSavedRef.current
+    ) {
+      try {
+        await backupAndWrite(
+          joinPath(projectRoot, activeFile),
+          source,
+          joinPath(projectRoot, '.pathwright/backups'),
+        )
+        lastSavedRef.current = source
+      } catch {
+        // Keep switching; the next save can retry.
+      }
+    }
     const text = await readTextFile(joinPath(root, relative))
     lastSavedRef.current = text
     setProjectRoot(root)
@@ -221,6 +257,17 @@ function App() {
     }
     const preferred =
       files.find((file) => /(^|\/)main\.ink$/i.test(file)) ?? files[0]
+    const contents: Record<string, string> = {}
+    await Promise.all(
+      files.map(async (relative) => {
+        try {
+          contents[relative] = await readTextFile(joinPath(root, relative))
+        } catch {
+          // Unreadable files are reported by the compiler as missing includes.
+        }
+      }),
+    )
+    setFileContents(contents)
     await loadProjectFile(root, preferred, files)
     const bibleRaw = await readOptionalTextFile(
       joinPath(root, 'pathwright.bible.json'),
@@ -243,6 +290,10 @@ function App() {
   const handleOpen = async () => {
     const file = await openInkFile()
     if (!file) return
+    setProjectRoot(null)
+    setProjectFiles([])
+    setActiveFile(null)
+    setFileContents({})
     setSource(file.text)
     setPath(file.path)
     setToast(`Opened ${file.path}`)
