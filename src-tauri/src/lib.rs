@@ -1,4 +1,5 @@
 use std::fs;
+use std::path::{Path, PathBuf};
 
 #[tauri::command]
 fn read_text_file(path: String) -> Result<String, String> {
@@ -6,8 +7,75 @@ fn read_text_file(path: String) -> Result<String, String> {
 }
 
 #[tauri::command]
+fn read_optional_text_file(path: String) -> Result<Option<String>, String> {
+  match fs::read_to_string(&path) {
+    Ok(text) => Ok(Some(text)),
+    Err(error) if error.kind() == std::io::ErrorKind::NotFound => Ok(None),
+    Err(error) => Err(error.to_string()),
+  }
+}
+
+#[tauri::command]
 fn write_text_file(path: String, contents: String) -> Result<(), String> {
   fs::write(&path, contents).map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+fn backup_and_write(path: String, contents: String, backup_dir: String) -> Result<(), String> {
+  let target = PathBuf::from(&path);
+  if target.exists() {
+    fs::create_dir_all(&backup_dir).map_err(|e| e.to_string())?;
+    let file_name = target
+      .file_name()
+      .map(|name| name.to_string_lossy().to_string())
+      .unwrap_or_else(|| "story.ink".to_string());
+    let stamp = std::time::SystemTime::now()
+      .duration_since(std::time::UNIX_EPOCH)
+      .map(|duration| duration.as_millis())
+      .unwrap_or(0);
+    let backup = PathBuf::from(&backup_dir).join(format!("{file_name}.{stamp}.bak"));
+    fs::copy(&target, backup).map_err(|e| e.to_string())?;
+  }
+  fs::write(&target, contents).map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+fn list_ink_files(root: String) -> Result<Vec<String>, String> {
+  let root_path = PathBuf::from(&root);
+  if !root_path.is_dir() {
+    return Err("Project folder not found".to_string());
+  }
+  let mut files = Vec::new();
+  collect_ink_files(&root_path, &root_path, &mut files).map_err(|e| e.to_string())?;
+  files.sort();
+  Ok(files)
+}
+
+fn collect_ink_files(root: &Path, dir: &Path, files: &mut Vec<String>) -> std::io::Result<()> {
+  for entry in fs::read_dir(dir)? {
+    let entry = entry?;
+    let name = entry.file_name().to_string_lossy().to_string();
+    if name.starts_with('.') || name == "node_modules" || name == "target" {
+      continue;
+    }
+    let path = entry.path();
+    let file_type = entry.file_type()?;
+    if file_type.is_dir() {
+      collect_ink_files(root, &path, files)?;
+    } else if file_type.is_file() && is_ink_file(&path) {
+      if let Ok(relative) = path.strip_prefix(root) {
+        files.push(relative.to_string_lossy().replace('\\', "/"));
+      }
+    }
+  }
+  Ok(())
+}
+
+fn is_ink_file(path: &Path) -> bool {
+  path
+    .extension()
+    .map(|extension| extension.eq_ignore_ascii_case("ink"))
+    .unwrap_or(false)
 }
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
@@ -24,7 +92,13 @@ pub fn run() {
       }
       Ok(())
     })
-    .invoke_handler(tauri::generate_handler![read_text_file, write_text_file])
+    .invoke_handler(tauri::generate_handler![
+      read_text_file,
+      read_optional_text_file,
+      write_text_file,
+      backup_and_write,
+      list_ink_files
+    ])
     .run(tauri::generate_context!())
     .expect("error while building tauri application");
 }

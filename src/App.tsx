@@ -15,7 +15,18 @@ import {
 import { buildStandaloneHtml } from './lib/exportHtml'
 import inkRuntimeSource from './lib/inkRuntime'
 import { THEMES, getTheme, themePalette } from './lib/themes'
-import { openInkFile, saveHtmlFile, saveInkFile } from './lib/platform'
+import {
+  backupAndWrite,
+  joinPath,
+  listInkFiles,
+  openInkFile,
+  openProjectFolder,
+  readOptionalTextFile,
+  readTextFile,
+  runningInTauri,
+  saveHtmlFile,
+  saveInkFile,
+} from './lib/platform'
 import type { Issue, PlayView } from './lib/types'
 import './App.css'
 
@@ -43,8 +54,15 @@ function App() {
   const [path, setPath] = useState<string | null>(null)
   const [tab, setTab] = useState<Tab>('preview')
   const [toast, setToast] = useState<string | null>(null)
+  const [projectRoot, setProjectRoot] = useState<string | null>(null)
+  const [projectFiles, setProjectFiles] = useState<string[]>([])
+  const [activeFile, setActiveFile] = useState<string | null>(null)
+  const [saveState, setSaveState] = useState<
+    'idle' | 'saving' | 'saved' | 'unsaved' | 'error'
+  >('idle')
   const storyRef = useRef<Story | null>(null)
   const editorRef = useRef<EditorView | null>(null)
+  const lastSavedRef = useRef('')
 
   useEffect(() => {
     const handle = window.setTimeout(() => {
@@ -72,6 +90,40 @@ function App() {
     const handle = window.setTimeout(() => setToast(null), 2500)
     return () => window.clearTimeout(handle)
   }, [toast])
+
+  useEffect(() => {
+    if (!projectRoot || !activeFile || !runningInTauri()) return
+    if (source === lastSavedRef.current) return
+    setSaveState('unsaved')
+    const handle = window.setTimeout(async () => {
+      setSaveState('saving')
+      try {
+        await backupAndWrite(
+          joinPath(projectRoot, activeFile),
+          source,
+          joinPath(projectRoot, '.pathwright/backups'),
+        )
+        lastSavedRef.current = source
+        setSaveState('saved')
+      } catch {
+        setSaveState('error')
+        setToast('Autosave failed')
+      }
+    }, 900)
+    return () => window.clearTimeout(handle)
+  }, [source, projectRoot, activeFile])
+
+  useEffect(() => {
+    if (!projectRoot || !runningInTauri()) return
+    const handle = window.setTimeout(() => {
+      void backupAndWrite(
+        joinPath(projectRoot, 'pathwright.bible.json'),
+        JSON.stringify(bible, null, 2),
+        joinPath(projectRoot, '.pathwright/backups'),
+      ).catch(() => undefined)
+    }, 800)
+    return () => window.clearTimeout(handle)
+  }, [bible, projectRoot])
 
   const issues = useMemo(
     () =>
@@ -138,6 +190,54 @@ function App() {
     setBibleText(JSON.stringify(next, null, 2))
   }
 
+  const loadProjectFile = async (
+    root: string,
+    relative: string,
+    files?: string[],
+  ) => {
+    const text = await readTextFile(joinPath(root, relative))
+    lastSavedRef.current = text
+    setProjectRoot(root)
+    setProjectFiles(files ?? projectFiles)
+    setActiveFile(relative)
+    setPath(joinPath(root, relative))
+    setSource(text)
+    setSaveState('saved')
+  }
+
+  const handleOpenProject = async () => {
+    if (!runningInTauri()) {
+      setToast('Folder projects need the desktop app')
+      return
+    }
+    const root = await openProjectFolder()
+    if (!root) return
+    const files = await listInkFiles(root)
+    if (files.length === 0) {
+      setToast('No .ink files found in that folder')
+      return
+    }
+    const preferred =
+      files.find((file) => /(^|\/)main\.ink$/i.test(file)) ?? files[0]
+    await loadProjectFile(root, preferred, files)
+    const bibleRaw = await readOptionalTextFile(
+      joinPath(root, 'pathwright.bible.json'),
+    )
+    if (!bibleRaw) return
+    try {
+      const parsed = JSON.parse(bibleRaw) as StoryBible
+      setBible(parsed)
+      setBibleText(JSON.stringify(parsed, null, 2))
+    } catch {
+      setToast('Could not read pathwright.bible.json')
+    }
+  }
+
+  const handleOpenFile = async (relative: string) => {
+    if (!projectRoot) return
+    await loadProjectFile(projectRoot, relative)
+  }
+
   const handleOpen = async () => {
     const file = await openInkFile()
     if (!file) return
@@ -147,11 +247,38 @@ function App() {
   }
 
   const handleSave = async () => {
+    if (projectRoot && activeFile && runningInTauri()) {
+      try {
+        await backupAndWrite(
+          joinPath(projectRoot, activeFile),
+          source,
+          joinPath(projectRoot, '.pathwright/backups'),
+        )
+        lastSavedRef.current = source
+        setSaveState('saved')
+        setToast('Saved')
+      } catch {
+        setSaveState('error')
+        setToast('Save failed')
+      }
+      return
+    }
     const target = await saveInkFile(path, source)
     if (!target) return
     setPath(target)
     setToast('Saved')
   }
+
+  useEffect(() => {
+    const onKeyDown = (event: KeyboardEvent) => {
+      if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === 's') {
+        event.preventDefault()
+        void handleSave()
+      }
+    }
+    window.addEventListener('keydown', onKeyDown)
+    return () => window.removeEventListener('keydown', onKeyDown)
+  })
 
   const handleExport = async () => {
     if (!compiledJson) return
@@ -218,10 +345,49 @@ function App() {
       </header>
 
       <main className="workspace">
+        <aside className="pane project-pane">
+          <div className="pane-head">
+            <span>Project</span>
+            {projectRoot && (
+              <span className={`save ${saveState}`}>{saveState}</span>
+            )}
+          </div>
+          <div className="project-body">
+            <button
+              type="button"
+              className="open-project"
+              onClick={() => void handleOpenProject()}
+            >
+              {projectRoot ? 'Open another folder…' : 'Open folder…'}
+            </button>
+            {projectRoot && (
+              <p className="project-root" title={projectRoot}>
+                {projectRoot}
+              </p>
+            )}
+            <ul className="file-list">
+              {projectFiles.map((file) => (
+                <li key={file}>
+                  <button
+                    type="button"
+                    className={file === activeFile ? 'active' : ''}
+                    onClick={() => void handleOpenFile(file)}
+                  >
+                    {file}
+                  </button>
+                </li>
+              ))}
+            </ul>
+          </div>
+        </aside>
+
         <section className="pane editor-pane">
           <div className="pane-head">
             <span>Story</span>
             <span className="path">{path ?? 'unsaved'}</span>
+            {saveState !== 'idle' && (
+              <span className={`save ${saveState}`}>{saveState}</span>
+            )}
           </div>
           <div className="editor">
             <CodeMirror

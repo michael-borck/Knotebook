@@ -10,6 +10,45 @@ export function runningInTauri(): boolean {
   return isTauri()
 }
 
+export function joinPath(root: string, relative: string): string {
+  const cleanRoot = root.replace(/[\\/]+$/, '')
+  const cleanRelative = relative.replace(/^[\\/]+/, '')
+  return `${cleanRoot}/${cleanRelative}`
+}
+
+export async function openProjectFolder(): Promise<string | null> {
+  if (!isTauri()) return null
+  const selected = await open({ directory: true, multiple: false })
+  return typeof selected === 'string' ? selected : null
+}
+
+export async function listInkFiles(root: string): Promise<string[]> {
+  return invoke<string[]>('list_ink_files', { root })
+}
+
+export async function readTextFile(path: string): Promise<string> {
+  return invoke<string>('read_text_file', { path })
+}
+
+export async function readOptionalTextFile(path: string): Promise<string | null> {
+  return invoke<string | null>('read_optional_text_file', { path })
+}
+
+export async function writeTextFile(
+  path: string,
+  contents: string,
+): Promise<void> {
+  await invoke('write_text_file', { path, contents })
+}
+
+export async function backupAndWrite(
+  path: string,
+  contents: string,
+  backupDir: string,
+): Promise<void> {
+  await invoke('backup_and_write', { path, contents, backupDir })
+}
+
 export async function openInkFile(): Promise<OpenedFile | null> {
   if (isTauri()) {
     const selected = await open({
@@ -17,7 +56,7 @@ export async function openInkFile(): Promise<OpenedFile | null> {
       filters: [{ name: 'Ink', extensions: ['ink', 'txt'] }],
     })
     if (!selected || typeof selected !== 'string') return null
-    const text = await invoke<string>('read_text_file', { path: selected })
+    const text = await readTextFile(selected)
     return { path: selected, text }
   }
 
@@ -47,7 +86,7 @@ export async function saveInkFile(
       filters: [{ name: 'Ink', extensions: ['ink'] }],
     })
     if (!target) return null
-    await invoke('write_text_file', { path: target, contents: text })
+    await writeTextFile(target, text)
     return target
   }
 
@@ -73,7 +112,7 @@ export async function saveHtmlFile(
       filters: [{ name: 'HTML', extensions: ['html'] }],
     })
     if (!target) return null
-    await invoke('write_text_file', { path: target, contents: html })
+    await writeTextFile(target, html)
     return target
   }
 
