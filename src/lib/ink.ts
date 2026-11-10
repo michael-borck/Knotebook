@@ -92,11 +92,15 @@ export function compileInk(source: string, input?: CompileInput): CompileResult 
   }
 }
 
-export function readTurn(story: Story): PlayView {
+export function readTurn(
+  story: Story,
+  onPath?: (path: string | null) => void,
+): PlayView {
   let text = ''
   const tags: string[] = []
   while (story.canContinue) {
     text += story.Continue() ?? ''
+    onPath?.(story.state.currentPathString ?? null)
     if (story.currentTags) tags.push(...story.currentTags)
   }
   const choices = story.currentChoices.map((choice) => ({
@@ -111,9 +115,19 @@ export function readTurn(story: Story): PlayView {
   }
 }
 
-export function choose(story: Story, index: number): PlayView {
+export function choose(
+  story: Story,
+  index: number,
+  onPath?: (path: string | null) => void,
+): PlayView {
   story.ChooseChoiceIndex(index)
-  return readTurn(story)
+  return readTurn(story, onPath)
+}
+
+export function knotFromPath(path: string | null): string | null {
+  if (!path) return null
+  const first = path.split('.')[0]
+  return /^[A-Za-z_][A-Za-z0-9_]*$/.test(first) ? first : null
 }
 
 function dirname(path: string): string {

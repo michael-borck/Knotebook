@@ -5,7 +5,7 @@ import { oneDark } from '@codemirror/theme-one-dark'
 import { EditorView } from '@codemirror/view'
 import { Story } from 'inkjs/full'
 import sampleStory from './samples/story.ink?raw'
-import { choose, compileInk, readTurn } from './lib/ink'
+import { choose, compileInk, knotFromPath, readTurn } from './lib/ink'
 import { countWords, lintInk } from './lib/lint'
 import {
   DEFAULT_BIBLE,
@@ -74,6 +74,7 @@ function App() {
       ? 'map'
       : 'text',
   )
+  const [visited, setVisited] = useState<Set<string>>(() => new Set())
   const [saveState, setSaveState] = useState<
     'idle' | 'saving' | 'saved' | 'unsaved' | 'error'
   >('idle')
@@ -97,13 +98,21 @@ function App() {
         setCompiledJson(result.json)
         setCompileOk(true)
         setCompileIssues(result.issues)
-        setPlay(readTurn(result.story))
+        const visitedPaths = new Set<string>()
+        setPlay(
+          readTurn(result.story, (path) => {
+            const knot = knotFromPath(path)
+            if (knot) visitedPaths.add(knot)
+          }),
+        )
+        setVisited(visitedPaths)
       } else {
         storyRef.current = null
         setCompiledJson(null)
         setCompileOk(false)
         setCompileIssues(result.issues)
         setPlay(EMPTY_PLAY)
+        setVisited(new Set())
       }
       setLintIssues(lintInk(source, bible))
     }, 250)
@@ -229,14 +238,27 @@ function App() {
   const handleChoose = (index: number) => {
     const story = storyRef.current
     if (!story) return
-    setPlay(choose(story, index))
+    const visitedPaths = new Set(visited)
+    const next = choose(story, index, (path) => {
+      const knot = knotFromPath(path)
+      if (knot) visitedPaths.add(knot)
+    })
+    setPlay(next)
+    setVisited(visitedPaths)
   }
 
   const handleRestart = () => {
     if (!compiledJson) return
     const story = new Story(compiledJson)
     storyRef.current = story
-    setPlay(readTurn(story))
+    const visitedPaths = new Set<string>()
+    setPlay(
+      readTurn(story, (path) => {
+        const knot = knotFromPath(path)
+        if (knot) visitedPaths.add(knot)
+      }),
+    )
+    setVisited(visitedPaths)
   }
 
   const handleJump = (line: number) => {
@@ -659,6 +681,7 @@ function App() {
             ) : (
               <KnotGraph
                 graph={graph}
+                visited={visited}
                 onJump={(line, file) => void handleGraphJump(line, file)}
               />
             )}

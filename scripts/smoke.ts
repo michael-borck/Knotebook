@@ -2,7 +2,7 @@ import { readFileSync } from 'node:fs'
 import { createHash } from 'node:crypto'
 import { Story } from 'inkjs/full'
 import { buildStandaloneHtml } from '../src/lib/exportHtml'
-import { choose, compileInk, readTurn } from '../src/lib/ink'
+import { choose, compileInk, knotFromPath, readTurn } from '../src/lib/ink'
 import { countWords, lintInk } from '../src/lib/lint'
 import { DEFAULT_BIBLE } from '../src/lib/bible'
 import { buildPack, parsePack } from '../src/lib/pack'
@@ -157,6 +157,34 @@ check(
   ['start', 'act1', 'act2'].every((id) =>
     multiGraph.nodes.some((node) => node.id === id),
   ),
+)
+
+const coverageStory = new Story(compiled.json)
+const coveredPaths = new Set<string>()
+readTurn(coverageStory, (path) => {
+  const knot = knotFromPath(path)
+  if (knot) coveredPaths.add(knot)
+})
+check('coverage captures entry knot', coveredPaths.has('start'))
+
+const flagGraph = parseGraph(
+  {
+    'main.ink':
+      '-> a\n\n=== a ===\nNothing happens here.\n\n=== b ===\nThe end.\n-> END\n',
+  },
+  'main.ink',
+)
+check(
+  'graph detects dead end',
+  flagGraph.nodes.find((node) => node.id === 'a')?.deadEnd === true,
+)
+check(
+  'graph detects unreachable',
+  flagGraph.nodes.find((node) => node.id === 'b')?.unreachable === true,
+)
+check(
+  'graph detects terminal',
+  flagGraph.nodes.find((node) => node.id === 'b')?.terminal === true,
 )
 
 const catalogueText = JSON.stringify({

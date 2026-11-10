@@ -82,8 +82,14 @@ highlighting.
   with React Flow.
 - Studio **Text / Map** toggle; click a knot to jump to its line; the entry knot
   is highlighted; missing targets are red.
+- **Coverage**: knots visited by the live preview get a green dot; the legend
+  shows `X/Y covered`.
+- **Dead ends**: a knot with no diverts, no choices and no `-> END` is flagged.
+- **Unreachable**: knots not reachable from the entry are dimmed with a dashed
+  border.
 - `?view=map` opens the Studio directly on the map.
-- Coverage and dead-end highlighting still to do.
+- Coverage resets when the story recompiles; persisting it across edits is still
+  to do.
 
 ### Phase 2 — pack + player
 Freeze `pack.json` + theme schema. Studio builds a pack. PWA player installs to

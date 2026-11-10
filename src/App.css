@@ -207,8 +207,64 @@
 }
 
 .graph-wrap {
+  position: relative;
   width: 100%;
   height: 100%;
+}
+
+.graph-legend {
+  position: absolute;
+  top: 10px;
+  left: 10px;
+  z-index: 5;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+  padding: 7px 10px;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background: rgba(22, 24, 34, 0.92);
+  font-size: 11px;
+  color: var(--muted);
+  pointer-events: none;
+}
+
+.graph-legend span {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.lg {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  display: inline-block;
+}
+
+.lg.entry {
+  background: var(--accent);
+}
+
+.lg.covered {
+  background: var(--ok);
+}
+
+.lg.dead {
+  background: var(--warning);
+}
+
+.lg.unreachable {
+  border: 1px dashed var(--muted);
+}
+
+.lg.missing {
+  background: var(--error);
+}
+
+.legend-count {
+  color: var(--text);
 }
 
 .graph-empty {
@@ -239,9 +295,33 @@
   border-color: var(--accent);
 }
 
+.knot-card.dead-end {
+  border-color: var(--warning);
+}
+
+.knot-card.unreachable {
+  border-style: dashed;
+  opacity: 0.7;
+}
+
 .knot-card.missing {
   border-color: var(--error);
   background: rgba(248, 113, 113, 0.08);
+}
+
+.knot-title-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+}
+
+.knot-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--ok);
+  flex: none;
 }
 
 .knot-title {

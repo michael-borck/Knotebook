@@ -20,8 +20,9 @@ npm run deploy:site
 Knotebook is two apps in one codebase:
 
 - **Knotebook Studio** — Tauri desktop app: write, compile, preview, lint,
-  theme, and build self-contained packs. Includes a **knot map** (React Flow) —
-  click a knot to jump to its line.
+  theme, and build self-contained packs. Includes a **knot map** (React Flow)
+  with coverage, dead-end and unreachable highlighting — click a knot to jump to
+  its line.
 - **Knotebook Player** — PWA: install packs, play offline, save progress.
 
 Themes reuse the Swipeverse art sets (`noir`, `kingdom`, `cyberpunk`, …).

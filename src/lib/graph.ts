@@ -6,6 +6,10 @@ export interface GraphNode {
   words: number
   entry: boolean
   missing: boolean
+  terminal: boolean
+  hasChoices: boolean
+  deadEnd: boolean
+  unreachable: boolean
 }
 
 export interface GraphEdge {
@@ -31,6 +35,8 @@ export function parseGraph(
 ): Graph {
   const nodes = new Map<string, GraphNode>()
   const words = new Map<string, number>()
+  const hasChoices = new Set<string>()
+  const terminal = new Set<string>()
   const edges: GraphEdge[] = []
   const edgeKeys = new Set<string>()
   const entries = new Set<string>()
@@ -43,6 +49,25 @@ export function parseGraph(
     edges.push({ id: key, source, target })
   }
 
+  const ensureNode = (id: string, file: string, line: number) => {
+    if (nodes.has(id)) return nodes.get(id)!
+    const node: GraphNode = {
+      id,
+      label: id,
+      file,
+      line,
+      words: 0,
+      entry: false,
+      missing: false,
+      terminal: false,
+      hasChoices: false,
+      deadEnd: false,
+      unreachable: false,
+    }
+    nodes.set(id, node)
+    return node
+  }
+
   for (const [file, text] of Object.entries(files)) {
     let current: string | null = null
     const lines = text.split('\n')
@@ -53,22 +78,16 @@ export function parseGraph(
 
       if (knotMatch) {
         current = knotMatch[1]
-        if (!nodes.has(current)) {
-          nodes.set(current, {
-            id: current,
-            label: current,
-            file,
-            line: index + 1,
-            words: 0,
-            entry: false,
-            missing: false,
-          })
-        }
+        ensureNode(current, file, index + 1)
         firstKnot ??= current
         return
       }
 
       if (STITCH_RE.test(line)) return
+
+      if (current && (line.trimStart().startsWith('*') || line.trimStart().startsWith('+'))) {
+        hasChoices.add(current)
+      }
 
       if (current) {
         const prose = line.replace(/#.*$/, '').replace(/^[\s*+\-~>]+/, '').trim()
@@ -88,7 +107,10 @@ export function parseGraph(
       }
 
       collectDiverts(line, (target) => {
-        if (KEYWORD_TARGETS.has(target)) return
+        if (KEYWORD_TARGETS.has(target)) {
+          if (current) terminal.add(current)
+          return
+        }
         if (current) addEdge(current, target)
         else entries.add(target)
       })
@@ -102,16 +124,24 @@ export function parseGraph(
 
   for (const edge of edges) {
     if (!nodes.has(edge.target)) {
-      nodes.set(edge.target, {
-        id: edge.target,
-        label: edge.target,
-        file: '',
-        line: 0,
-        words: 0,
-        entry: false,
-        missing: true,
-      })
+      const node = ensureNode(edge.target, '', 0)
+      node.missing = true
     }
+  }
+
+  const outDegree = new Map<string, number>()
+  for (const edge of edges) {
+    outDegree.set(edge.source, (outDegree.get(edge.source) ?? 0) + 1)
+  }
+
+  for (const node of nodes.values()) {
+    if (node.missing) continue
+    node.terminal = terminal.has(node.id)
+    node.hasChoices = hasChoices.has(node.id)
+    node.deadEnd =
+      !node.terminal &&
+      !node.hasChoices &&
+      (outDegree.get(node.id) ?? 0) === 0
   }
 
   const validEntries = [...entries].filter((id) => {
@@ -126,6 +156,29 @@ export function parseGraph(
   } else if (firstKnot) {
     const node = nodes.get(firstKnot)
     if (node) node.entry = true
+  }
+
+  const entryIds = [...nodes.values()]
+    .filter((node) => node.entry)
+    .map((node) => node.id)
+  if (entryIds.length > 0) {
+    const adjacency = new Map<string, string[]>()
+    for (const edge of edges) {
+      const list = adjacency.get(edge.source) ?? []
+      list.push(edge.target)
+      adjacency.set(edge.source, list)
+    }
+    const reached = new Set<string>()
+    const queue = [...entryIds]
+    while (queue.length > 0) {
+      const id = queue.shift()
+      if (!id || reached.has(id)) continue
+      reached.add(id)
+      for (const next of adjacency.get(id) ?? []) queue.push(next)
+    }
+    for (const node of nodes.values()) {
+      if (!node.missing) node.unreachable = !reached.has(node.id)
+    }
   }
 
   void rootFile

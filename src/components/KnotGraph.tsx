@@ -20,6 +20,9 @@ export interface KnotNodeData extends Record<string, unknown> {
   words: number
   entry: boolean
   missing: boolean
+  deadEnd: boolean
+  unreachable: boolean
+  covered: boolean
 }
 
 const NODE_WIDTH = 176
@@ -30,30 +33,44 @@ function KnotNode({ data }: NodeProps) {
   const node = data as KnotNodeData
   const className = [
     'knot-card',
-    node.entry ? 'entry' : '',
     node.missing ? 'missing' : '',
+    node.deadEnd ? 'dead-end' : '',
+    node.unreachable ? 'unreachable' : '',
+    node.entry ? 'entry' : '',
   ]
     .filter(Boolean)
     .join(' ')
 
+  const meta = node.missing
+    ? 'missing target'
+    : node.deadEnd
+      ? 'dead end'
+      : node.unreachable
+        ? 'unreachable'
+        : `${node.file} · ${node.words} words`
+
   return (
     <div className={className}>
-      <div className="knot-title">{node.label}</div>
-      <div className="knot-meta">
-        {node.missing
-          ? 'missing target'
-          : `${node.file} · ${node.words} words`}
+      <div className="knot-title-row">
+        {node.covered && <span className="knot-dot" />}
+        <span className="knot-title">{node.label}</span>
       </div>
+      <div className="knot-meta">{meta}</div>
     </div>
   )
 }
 
 interface KnotGraphProps {
   graph: Graph
+  visited: Set<string>
   onJump: (line: number, file?: string) => void
 }
 
-export default function KnotGraph({ graph, onJump }: KnotGraphProps) {
+export default function KnotGraph({
+  graph,
+  visited,
+  onJump,
+}: KnotGraphProps) {
   const { nodes, edges } = useMemo(() => {
     const layout = new dagre.graphlib.Graph()
     layout.setGraph({
@@ -89,6 +106,9 @@ export default function KnotGraph({ graph, onJump }: KnotGraphProps) {
           words: node.words,
           entry: node.entry,
           missing: node.missing,
+          deadEnd: node.deadEnd,
+          unreachable: node.unreachable,
+          covered: visited.has(node.id),
         },
         style: { width: NODE_WIDTH, height: NODE_HEIGHT },
       }
@@ -103,7 +123,10 @@ export default function KnotGraph({ graph, onJump }: KnotGraphProps) {
     }))
 
     return { nodes, edges }
-  }, [graph])
+  }, [graph, visited])
+
+  const realNodes = graph.nodes.filter((node) => !node.missing)
+  const coveredCount = realNodes.filter((node) => visited.has(node.id)).length
 
   if (graph.nodes.length === 0) {
     return (
@@ -115,6 +138,26 @@ export default function KnotGraph({ graph, onJump }: KnotGraphProps) {
 
   return (
     <div className="graph-wrap">
+      <div className="graph-legend">
+        <span>
+          <i className="lg entry" /> entry
+        </span>
+        <span>
+          <i className="lg covered" /> covered
+        </span>
+        <span>
+          <i className="lg dead" /> dead end
+        </span>
+        <span>
+          <i className="lg unreachable" /> unreachable
+        </span>
+        <span>
+          <i className="lg missing" /> missing
+        </span>
+        <span className="legend-count">
+          {coveredCount}/{realNodes.length} covered
+        </span>
+      </div>
       <ReactFlow
         nodes={nodes}
         edges={edges}
