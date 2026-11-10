@@ -1,6 +1,6 @@
 import type { StoryBible } from './bible'
 
-export const PACK_FORMAT = 'pathwright-pack'
+export const PACK_FORMAT = 'knotebook-pack'
 export const PACK_VERSION = 1
 
 export interface PackStory {
@@ -100,7 +100,7 @@ export function parsePack(text: string): {
     return { pack: null, error: 'That file is not valid JSON.' }
   }
   if (!isPack(value)) {
-    return { pack: null, error: 'That file is not a Pathwright pack.' }
+    return { pack: null, error: 'That file is not a Knotebook pack.' }
   }
   return { pack: value, error: null }
 }

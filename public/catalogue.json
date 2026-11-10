@@ -1,17 +1,19 @@
 {
-  "format": "pathwright-catalogue",
+  "format": "knotebook-catalogue",
   "version": 1,
-  "generated": "2026-11-10T00:16:55.459Z",
+  "generated": "2026-11-10T00:28:40.601Z",
+  "publicKey": "oueMhcTC2rw/7cxgAVsws6msxx7EYGKG0hw0fmhZ4wE=",
   "packs": [
     {
       "id": "the-lantern-keepers",
       "title": "The Lantern Keepers",
-      "author": "Pathwright",
+      "author": "Knotebook",
       "theme": "noir",
-      "sha256": "73b0f59fe1da2b6e76aab7610ea9c960bc5489737623799554e6d4e70d3b04d2",
-      "url": "sample.pathwright.json",
+      "sha256": "af601b0d157093b21f2a7615782ab7eba84a9bffe6bda1462ac674bee1c94494",
+      "url": "sample.knotebook.json",
       "description": "Demo pack generated from the sample story.",
-      "licence": "CC BY 4.0"
+      "licence": "CC BY 4.0",
+      "signature": "Enhe1xPKE1JZOE2GBxGOdw6scT+dQU+ZStgImYkwn0k2jQ+LJKFWWrirztqEGuMfAgp2AvBd0k2iPkmYLWSdBA=="
     }
   ]
 }

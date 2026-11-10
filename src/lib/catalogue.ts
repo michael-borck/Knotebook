@@ -1,4 +1,6 @@
-export const CATALOGUE_FORMAT = 'pathwright-catalogue'
+import { verifyDetached } from './crypto'
+
+export const CATALOGUE_FORMAT = 'knotebook-catalogue'
 export const CATALOGUE_VERSION = 1
 
 export interface CatalogueEntry {
@@ -10,12 +12,14 @@ export interface CatalogueEntry {
   url: string
   description?: string
   licence?: string
+  signature?: string
 }
 
 export interface Catalogue {
   format: typeof CATALOGUE_FORMAT
   version: number
   generated: string
+  publicKey?: string
   packs: CatalogueEntry[]
 }
 
@@ -27,7 +31,8 @@ function isEntry(value: unknown): value is CatalogueEntry {
     typeof entry.title === 'string' &&
     typeof entry.theme === 'string' &&
     typeof entry.sha256 === 'string' &&
-    typeof entry.url === 'string'
+    typeof entry.url === 'string' &&
+    (entry.signature === undefined || typeof entry.signature === 'string')
   )
 }
 
@@ -37,6 +42,8 @@ export function isCatalogue(value: unknown): value is Catalogue {
   return (
     catalogue.format === CATALOGUE_FORMAT &&
     typeof catalogue.version === 'number' &&
+    (catalogue.publicKey === undefined ||
+      typeof catalogue.publicKey === 'string') &&
     Array.isArray(catalogue.packs) &&
     catalogue.packs.every(isEntry)
   )
@@ -53,7 +60,7 @@ export function parseCatalogue(text: string): {
     return { catalogue: null, error: 'That catalogue is not valid JSON.' }
   }
   if (!isCatalogue(value)) {
-    return { catalogue: null, error: 'That file is not a Pathwright catalogue.' }
+    return { catalogue: null, error: 'That file is not a Knotebook catalogue.' }
   }
   return { catalogue: value, error: null }
 }
@@ -78,4 +85,13 @@ export async function fetchPackBytes(
     throw new Error(`Pack download failed (${response.status}).`)
   }
   return response.arrayBuffer()
+}
+
+export function verifyPackSignature(
+  entry: CatalogueEntry,
+  bytes: ArrayBuffer,
+  publicKey: string,
+): boolean {
+  if (!entry.signature) return false
+  return verifyDetached(new Uint8Array(bytes), entry.signature, publicKey)
 }

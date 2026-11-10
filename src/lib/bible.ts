@@ -22,7 +22,7 @@ export interface StoryBible {
 export const DEFAULT_BIBLE: StoryBible = {
   title: 'The Lantern Keepers',
   theme: 'noir',
-  premise: 'A short branching story used to test Pathwright.',
+  premise: 'A short branching story used to test Knotebook.',
   tone: 'Warm, conversational, second person.',
   variables: [
     { name: 'courage', description: '0-10, how bold the protagonist has been.' },

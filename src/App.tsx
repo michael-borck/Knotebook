@@ -143,7 +143,7 @@ function App() {
         await backupAndWrite(
           joinPath(projectRoot, activeFile),
           source,
-          joinPath(projectRoot, '.pathwright/backups'),
+          joinPath(projectRoot, '.knotebook/backups'),
         )
         lastSavedRef.current = source
         setSaveState('saved')
@@ -159,9 +159,9 @@ function App() {
     if (!projectRoot || !runningInTauri()) return
     const handle = window.setTimeout(() => {
       void backupAndWrite(
-        joinPath(projectRoot, 'pathwright.bible.json'),
+        joinPath(projectRoot, 'knotebook.bible.json'),
         JSON.stringify(bible, null, 2),
-        joinPath(projectRoot, '.pathwright/backups'),
+        joinPath(projectRoot, '.knotebook/backups'),
       ).catch(() => undefined)
     }, 800)
     return () => window.clearTimeout(handle)
@@ -256,7 +256,7 @@ function App() {
         await backupAndWrite(
           joinPath(projectRoot, activeFile),
           source,
-          joinPath(projectRoot, '.pathwright/backups'),
+          joinPath(projectRoot, '.knotebook/backups'),
         )
         lastSavedRef.current = source
       } catch {
@@ -303,7 +303,7 @@ function App() {
     setPreviewAsset(null)
     await loadProjectFile(root, preferred, files)
     const bibleRaw = await readOptionalTextFile(
-      joinPath(root, 'pathwright.bible.json'),
+      joinPath(root, 'knotebook.bible.json'),
     )
     if (!bibleRaw) return
     try {
@@ -311,7 +311,7 @@ function App() {
       setBible(parsed)
       setBibleText(JSON.stringify(parsed, null, 2))
     } catch {
-      setToast('Could not read pathwright.bible.json')
+      setToast('Could not read knotebook.bible.json')
     }
   }
 
@@ -367,7 +367,7 @@ function App() {
         await backupAndWrite(
           joinPath(projectRoot, activeFile),
           source,
-          joinPath(projectRoot, '.pathwright/backups'),
+          joinPath(projectRoot, '.knotebook/backups'),
         )
         lastSavedRef.current = source
         setSaveState('saved')
@@ -473,7 +473,7 @@ function App() {
   return (
     <div className="app">
       <header className="toolbar">
-        <div className="brand">Pathwright</div>
+        <div className="brand">Knotebook</div>
         <div className="actions">
           <button type="button" onClick={handleOpen}>
             Open
@@ -796,7 +796,7 @@ function BibleEditor({
         <span className="muted">{themeHint}</span>
       </label>
       <p className="muted">
-        The story bible is the context Pathwright sends to the LLM. Edit it, then
+        The story bible is the context Knotebook sends to the LLM. Edit it, then
         Apply. Lint checks tags against this list.
       </p>
       <textarea

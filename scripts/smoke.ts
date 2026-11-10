@@ -6,7 +6,7 @@ import { choose, compileInk, readTurn } from '../src/lib/ink'
 import { countWords, lintInk } from '../src/lib/lint'
 import { DEFAULT_BIBLE } from '../src/lib/bible'
 import { buildPack, parsePack } from '../src/lib/pack'
-import { CATALOGUE_FORMAT, parseCatalogue, sha256Hex } from '../src/lib/catalogue'
+import { CATALOGUE_FORMAT, parseCatalogue, sha256Hex, verifyPackSignature } from '../src/lib/catalogue'
 
 const failures: string[] = []
 function check(name: string, condition: boolean) {
@@ -145,7 +145,7 @@ const catalogueText = JSON.stringify({
       author: 'Tester',
       theme: 'noir',
       sha256: 'abc123',
-      url: 'smoke.pathwright.json',
+      url: 'smoke.knotebook.json',
     },
   ],
 })
@@ -155,12 +155,12 @@ check(
 )
 check('catalogue rejects junk', parseCatalogue('{"nope":true}').catalogue === null)
 
-const digestBytes = new TextEncoder().encode('pathwright')
+const digestBytes = new TextEncoder().encode('knotebook')
 const digest = await sha256Hex(digestBytes.slice().buffer as ArrayBuffer)
 const expectedDigest = createHash('sha256').update(digestBytes).digest('hex')
 check('sha256 matches node', digest === expectedDigest)
 
-const demoPackBytes = readFileSync('public/sample.pathwright.json')
+const demoPackBytes = readFileSync('public/sample.knotebook.json')
 const demoCatalogue = parseCatalogue(readFileSync('public/catalogue.json', 'utf8'))
 const demoDigest = createHash('sha256').update(demoPackBytes).digest('hex')
 check(
@@ -168,6 +168,26 @@ check(
   demoCatalogue.catalogue?.packs[0]?.sha256 === demoDigest,
 )
 check('demo pack parses', parsePack(demoPackBytes.toString('utf8')).pack !== null)
+
+const demoEntry = demoCatalogue.catalogue?.packs[0]
+const demoPublicKey = demoCatalogue.catalogue?.publicKey
+if (demoEntry?.signature && demoPublicKey) {
+  const demoSignedBytes = new Uint8Array(demoPackBytes)
+  check(
+    'demo signature verifies',
+    verifyPackSignature(
+      demoEntry,
+      demoSignedBytes.buffer as ArrayBuffer,
+      demoPublicKey,
+    ),
+  )
+  const tampered = new Uint8Array(demoPackBytes)
+  tampered[0] ^= 1
+  check(
+    'demo signature rejects tamper',
+    !verifyPackSignature(demoEntry, tampered.buffer as ArrayBuffer, demoPublicKey),
+  )
+}
 
 if (failures.length) {
   console.error('FAILED:', failures.join(', '))

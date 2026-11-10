@@ -1,5 +1,5 @@
 # title: The Lantern Keepers
-# author: Pathwright
+# author: Knotebook
 
 VAR courage = 0
 VAR lantern = false

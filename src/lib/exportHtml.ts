@@ -56,7 +56,7 @@ const READER_JS = `
   var scene = document.getElementById('scene');
   var cover = document.getElementById('cover');
   var currentImage = null;
-  var SAVE_KEY = 'pathwright:' + document.title;
+  var SAVE_KEY = 'knotebook:' + document.title;
 
   if (COVER) {
     cover.src = COVER;

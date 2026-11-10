@@ -1,4 +1,4 @@
-# Pathwright — build plan
+# Knotebook — build plan
 
 Status: **Phase 0 + 1 complete; Phase 2 first cut (packs + player).** Last
 updated: 2026-11-09.
@@ -63,8 +63,8 @@ list, story bible, LLM prompt, standalone HTML export, smoke test.
 - **Multi-file compile:** an in-memory inkjs file handler resolves `INCLUDE`
   from the project's `.ink` files, relative to the root file's folder (as
   `inklecate` does).
-- Autosave + timestamped backups under `.pathwright/backups/`.
-- `pathwright.bible.json` stored in the project.
+- Autosave + timestamped backups under `.knotebook/backups/`.
+- `knotebook.bible.json` stored in the project.
 - Theme registry + picker; preview and export follow the theme.
 - Click an issue to jump to its line.
 - Shortcuts: save, open, export.
@@ -82,8 +82,8 @@ IndexedDB, plays offline, saves progress, renders themes.
 Exit: install a pack, play offline, progress survives reload.
 
 **First cut (implemented):**
-- `src/lib/pack.ts` — `pathwright-pack` v1, `buildPack`, `parsePack`.
-- Studio **Build pack** writes `<slug>.pathwright.json` (manifest + compiled
+- `src/lib/pack.ts` — `knotebook-pack` v1, `buildPack`, `parsePack`.
+- Studio **Build pack** writes `<slug>.knotebook.json` (manifest + compiled
   story JSON + `assets` as data URLs + optional `cover`).
 - Project **assets**: `assets/` listing, **Add image…**, and `cover.*`
   auto-detected as the pack cover.
@@ -98,19 +98,22 @@ Exit: install a pack, play offline, progress survives reload.
 
 ### Phase 3 — store + signing
 Static catalogue, CI validation, sha256 + Ed25519 signature,
-`pathwright-packs` submission repo, `pathwright-store` site, theme filters.
+`knotebook-packs` submission repo, `knotebook-store` site, theme filters.
 
 Exit: third-party PR → reviewed → signed → installable.
 
 **First cut (implemented):**
-- `src/lib/catalogue.ts` — `pathwright-catalogue` v1, `parseCatalogue`,
+- `src/lib/catalogue.ts` — `knotebook-catalogue` v1, `parseCatalogue`,
   `sha256Hex`, `fetchPackBytes`.
-- `scripts/build-catalogue.ts` — hash a folder of packs into a catalogue.
-- `scripts/make-sample-pack.ts` — bundled demo store in `public/`.
+- **Ed25519 signing** (`tweetnacl`): `keys:generate`, `store:build --key`,
+  player verification, `VITE_STORE_PUBLIC_KEY` pinning.
+- `scripts/build-catalogue.ts` — hash and sign a folder of packs into a catalogue.
+- `scripts/make-sample-pack.ts` — bundled signed demo store in `public/`.
 - Player **Store** tab: catalogue URL via `?store=` / `VITE_CATALOGUE_URL` /
-  `./catalogue.json`; install verifies **SHA-256** before IndexedDB.
+  `./catalogue.json`; install verifies **SHA-256** and **signature** before
+  IndexedDB.
 - `docs/STORE.md`, `templates/submission.json`.
-- Signing (Ed25519) and the `pathwright-packs` / `pathwright-store` repos are
+- Repo scaffolds (`knotebook-packs`, `knotebook-store`) and update detection are
   still to do.
 
 ### Phase 4 — LLM loop (differentiator)
@@ -130,7 +133,7 @@ accessibility.
 
 | Decision | Choice |
 |---|---|
-| Repo layout | App monorepo; separate `pathwright-packs` + `pathwright-store` content repos |
+| Repo layout | App monorepo; separate `knotebook-packs` + `knotebook-store` content repos |
 | Player tech | Share core; one React codebase for now |
 | Theme IDs | Canonical `kingdom`; alias `mystical → kingdom`; keep `base` |
 | Signing | Ed25519 + sha256 from Phase 3 |
@@ -170,7 +173,7 @@ assets/*           images, audio
   Cargo/Tauri build scripts choke on them. Before desktop builds:
   `npm run clean:appledouble`.
 - Cargo's `target/` must be on APFS: the desktop scripts set
-  `CARGO_TARGET_DIR=$HOME/Library/Caches/pathwright-target`.
+  `CARGO_TARGET_DIR=$HOME/Library/Caches/knotebook-target`.
 - **Strong recommendation:** move the repo to local APFS; that removes both
   workarounds.
 - Commands: `npm run dev`, `npm run build`, `npm run smoke`,
@@ -182,4 +185,4 @@ assets/*           images, audio
 - `npm run build` — typecheck + bundle passes.
 - `npm run smoke` — compile, play, lint, export round-trip.
 - `cargo check` — Tauri shell builds.
-- `npm run dev` — server responds 200 with the Pathwright page.
+- `npm run dev` — server responds 200 with the Knotebook page.

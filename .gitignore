@@ -34,3 +34,7 @@ src-tauri/gen/schemas
 # Env
 .env
 .env.*
+
+# Store signing key (never commit)
+keys/store-secret.txt
+keys/*secret*

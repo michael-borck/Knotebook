@@ -2,5 +2,5 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
 fn main() {
-  pathwright_lib::run();
+  knotebook_lib::run();
 }

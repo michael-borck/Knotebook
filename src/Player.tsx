@@ -14,6 +14,7 @@ import {
   fetchPackBytes,
   parseCatalogue,
   sha256Hex,
+  verifyPackSignature,
   type Catalogue,
   type CatalogueEntry,
 } from './lib/catalogue'
@@ -57,6 +58,10 @@ export default function Player() {
       'catalogue.json'
     )
   }, [])
+
+  const storePublicKey =
+    (import.meta.env.VITE_STORE_PUBLIC_KEY as string | undefined) ??
+    catalogue?.publicKey
 
   useEffect(() => {
     let active = true
@@ -208,6 +213,12 @@ export default function Player() {
       if (digest.toLowerCase() !== entry.sha256.toLowerCase()) {
         throw new Error('Hash mismatch — the pack was rejected.')
       }
+      const publicKey =
+        (import.meta.env.VITE_STORE_PUBLIC_KEY as string | undefined) ??
+        catalogue?.publicKey
+      if (publicKey && !verifyPackSignature(entry, bytes, publicKey)) {
+        throw new Error('Signature check failed — the pack was rejected.')
+      }
       const { pack: imported, error } = parsePack(
         new TextDecoder().decode(bytes),
       )
@@ -276,7 +287,7 @@ export default function Player() {
     <div className="player-shell">
       <header className="player-bar">
         <div className="player-brand">
-          Pathwright <span>Player</span>
+          Knotebook <span>Player</span>
         </div>
         <nav className="player-nav">
           <button
@@ -364,6 +375,11 @@ export default function Player() {
               Refresh
             </button>
           </div>
+          {!storePublicKey && (
+            <p className="muted small">
+              Unsigned catalogue — downloads are hash-checked only.
+            </p>
+          )}
           {catalogueLoading && <p className="muted">Loading catalogue…</p>}
           {catalogueError && (
             <div className="store-error">

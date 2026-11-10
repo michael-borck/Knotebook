@@ -1,6 +1,6 @@
 {
-  "name": "Pathwright",
-  "short_name": "Pathwright",
+  "name": "Knotebook",
+  "short_name": "Knotebook",
   "description": "An LLM-friendly studio and player for branching stories.",
   "id": "./",
   "start_url": "./",

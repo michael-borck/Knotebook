@@ -1,32 +1,66 @@
-# React + TypeScript + Vite
+# Knotebook
 
-This template provides a minimal setup to get React working in Vite with HMR and some Oxlint rules.
+An LLM-friendly **studio and player** for branching stories, built on
+[ink](https://www.inklestudios.com/ink/).
 
-Currently, two official plugins are available:
+Knotebook is two apps in one codebase:
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+- **Knotebook Studio** — Tauri desktop app: write, compile, preview, lint,
+  theme, and build self-contained packs.
+- **Knotebook Player** — PWA: install packs, play offline, save progress.
 
-## React Compiler
+Themes reuse the Swipeverse art sets (`noir`, `kingdom`, `cyberpunk`, …).
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+## Stack
 
-## Expanding the Oxlint configuration
+Tauri 2 · React 19 · Vite 8 · CodeMirror 6 · inkjs · TweetNaCl.
 
-If you are developing a production application, we recommend enabling type-aware lint rules by installing `oxlint-tsgolint` and editing `.oxlintrc.json`:
+## Quick start
 
-```json
-{
-  "$schema": "./node_modules/oxlint/configuration_schema.json",
-  "plugins": ["react", "typescript", "oxc"],
-  "options": {
-    "typeAware": true
-  },
-  "rules": {
-    "react/rules-of-hooks": "error",
-    "react/only-export-components": ["warn", { "allowConstantExport": true }]
-  }
-}
+```bash
+npm install
+npm run dev            # Studio at http://localhost:5173/
+                       # Player at http://localhost:5173/?player=1
+npm run desktop:dev    # Tauri Studio
 ```
 
-See the [Oxlint rules documentation](https://oxc.rs/docs/guide/usage/linter/rules) for the full list of rules and categories.
+## Verify
+
+```bash
+npm run build
+npm run smoke
+cd src-tauri && cargo check
+```
+
+## Packs and store
+
+A **pack** is one self-contained `.knotebook.json` file: manifest, compiled ink,
+assets and cover. Import it directly, or publish it through a static catalogue.
+
+- Build a pack in Studio → **Build pack**.
+- Player → **Import pack**, or → **Store** with `?store=<catalogue-url>`.
+- Catalogue format, submission flow and signing: [`docs/STORE.md`](docs/STORE.md).
+
+Demo store is generated with `npm run store:demo`.
+
+## Docs
+
+- [`docs/PLAN.md`](docs/PLAN.md) — architecture and roadmap.
+- [`docs/STORE.md`](docs/STORE.md) — packs, catalogue, store, signing.
+
+## Dev notes
+
+This repo lives on an exFAT volume, so macOS creates `._*` files that break
+Tauri's build. The desktop scripts work around it:
+
+```bash
+npm run clean:appledouble
+npm run desktop:dev
+```
+
+`CARGO_TARGET_DIR` is pointed at local APFS by those scripts. Moving the repo to
+a local APFS disk removes both workarounds.
+
+## License
+
+TBD.

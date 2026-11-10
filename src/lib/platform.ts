@@ -158,12 +158,12 @@ export async function savePackFile(
       .replace(/[^\w.-]+/g, '-')
       .replace(/^-+|-+$/g, '')
       .toLowerCase() || 'story'
-  const filename = base.endsWith('.json') ? base : `${base}.pathwright.json`
+  const filename = base.endsWith('.json') ? base : `${base}.knotebook.json`
 
   if (isTauri()) {
     const target = await save({
       defaultPath: filename,
-      filters: [{ name: 'Pathwright pack', extensions: ['json'] }],
+      filters: [{ name: 'Knotebook pack', extensions: ['json'] }],
     })
     if (!target) return null
     await writeTextFile(target, json)

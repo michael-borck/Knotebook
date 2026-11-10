@@ -1,6 +1,6 @@
 import type { Pack } from './pack'
 
-const DB_NAME = 'pathwright'
+const DB_NAME = 'knotebook'
 const DB_VERSION = 1
 const PACK_STORE = 'packs'
 const PROGRESS_STORE = 'progress'

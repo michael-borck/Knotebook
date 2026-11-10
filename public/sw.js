@@ -1,5 +1,5 @@
-/* Pathwright offline shell. Bump CACHE when the shell changes. */
-const CACHE = 'pathwright-v1'
+/* Knotebook offline shell. Bump CACHE when the shell changes. */
+const CACHE = 'knotebook-v1'
 const SHELL = ['./', './index.html', './manifest.webmanifest']
 
 self.addEventListener('install', (event) => {
