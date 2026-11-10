@@ -72,8 +72,12 @@ jobs:
       - name: Verify signature and notarization
         shell: bash
         run: |
-          APP="src-tauri/target/aarch64-apple-darwin/release/bundle/macos/Knotebook.app"
+          DMG=$(ls src-tauri/target/aarch64-apple-darwin/release/bundle/dmg/*.dmg | head -1)
+          MNT=$(mktemp -d)
+          trap 'hdiutil detach "$MNT" >/dev/null 2>&1 || true' EXIT
+          hdiutil attach "$DMG" -nobrowse -readonly -mountpoint "$MNT" >/dev/null
+          APP="$MNT/Knotebook.app"
           codesign --verify --deep --strict --verbose=2 "$APP"
           spctl --assess --type execute --verbose=4 "$APP"
           xcrun stapler validate "$APP"
-          ls -lh src-tauri/target/aarch64-apple-darwin/release/bundle/dmg/*.dmg
+          ls -lh "$DMG"
