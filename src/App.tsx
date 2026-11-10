@@ -5,7 +5,7 @@ import { oneDark } from '@codemirror/theme-one-dark'
 import { EditorView } from '@codemirror/view'
 import { Story } from 'inkjs/full'
 import sampleStory from './samples/story.ink?raw'
-import { choose, compileInk, knotFromPath, readTurn } from './lib/ink'
+import { choose, compileInk, nodeFromPath, readTurn } from './lib/ink'
 import { countWords, lintInk } from './lib/lint'
 import {
   DEFAULT_BIBLE,
@@ -118,7 +118,7 @@ function App() {
         const visitedPaths = new Set(visitedRef.current)
         setPlay(
           readTurn(result.story, (path) => {
-            const knot = knotFromPath(path)
+            const knot = nodeFromPath(path)
             if (knot) visitedPaths.add(knot)
           }),
         )
@@ -257,7 +257,7 @@ function App() {
     if (!story) return
     const visitedPaths = new Set(visited)
     const next = choose(story, index, (path) => {
-      const knot = knotFromPath(path)
+      const knot = nodeFromPath(path)
       if (knot) visitedPaths.add(knot)
     })
     setPlay(next)
@@ -273,7 +273,7 @@ function App() {
     const visitedPaths = new Set<string>()
     setPlay(
       readTurn(story, (path) => {
-        const knot = knotFromPath(path)
+        const knot = nodeFromPath(path)
         if (knot) visitedPaths.add(knot)
       }),
     )

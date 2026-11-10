@@ -124,10 +124,14 @@ export function choose(
   return readTurn(story, onPath)
 }
 
-export function knotFromPath(path: string | null): string | null {
+export function nodeFromPath(path: string | null): string | null {
   if (!path) return null
-  const first = path.split('.')[0]
-  return /^[A-Za-z_][A-Za-z0-9_]*$/.test(first) ? first : null
+  const [first, second] = path.split('.')
+  if (!/^[A-Za-z_][A-Za-z0-9_]*$/.test(first)) return null
+  if (second && /^[A-Za-z_][A-Za-z0-9_]*$/.test(second)) {
+    return `${first}.${second}`
+  }
+  return first
 }
 
 function dirname(path: string): string {

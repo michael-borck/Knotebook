@@ -18,6 +18,8 @@ export interface KnotNodeData extends Record<string, unknown> {
   file: string
   line: number
   words: number
+  kind: 'knot' | 'stitch'
+  parent?: string
   entry: boolean
   missing: boolean
   deadEnd: boolean
@@ -33,6 +35,7 @@ function KnotNode({ data }: NodeProps) {
   const node = data as KnotNodeData
   const className = [
     'knot-card',
+    node.kind === 'stitch' ? 'stitch' : '',
     node.missing ? 'missing' : '',
     node.deadEnd ? 'dead-end' : '',
     node.unreachable ? 'unreachable' : '',
@@ -47,7 +50,9 @@ function KnotNode({ data }: NodeProps) {
       ? 'dead end'
       : node.unreachable
         ? 'unreachable'
-        : `${node.file} · ${node.words} words`
+        : node.kind === 'stitch'
+          ? `${node.parent ?? 'stitch'} · ${node.words} words`
+          : `${node.file} · ${node.words} words`
 
   return (
     <div className={className}>
@@ -106,6 +111,8 @@ export default function KnotGraph({
           file: node.file,
           line: node.line,
           words: node.words,
+          kind: node.kind,
+          parent: node.parent,
           entry: node.entry,
           missing: node.missing,
           deadEnd: node.deadEnd,
@@ -143,6 +150,9 @@ export default function KnotGraph({
       <div className="graph-legend">
         <span>
           <i className="lg entry" /> entry
+        </span>
+        <span>
+          <i className="lg stitch" /> stitch
         </span>
         <span>
           <i className="lg covered" /> covered

@@ -2,7 +2,7 @@ import { readFileSync } from 'node:fs'
 import { createHash } from 'node:crypto'
 import { Story } from 'inkjs/full'
 import { buildStandaloneHtml } from '../src/lib/exportHtml'
-import { choose, compileInk, knotFromPath, readTurn } from '../src/lib/ink'
+import { choose, compileInk, nodeFromPath, readTurn } from '../src/lib/ink'
 import { countWords, lintInk } from '../src/lib/lint'
 import { DEFAULT_BIBLE } from '../src/lib/bible'
 import { buildPack, parsePack } from '../src/lib/pack'
@@ -159,10 +159,40 @@ check(
   ),
 )
 
+const stitchFiles = {
+  'main.ink':
+    '-> a\n\n=== a ===\nIntro.\n-> one\n\n= one\nOne.\n-> two\n\n= two\nTwo.\n-> END\n',
+}
+const stitchGraph = parseGraph(stitchFiles, 'main.ink')
+check(
+  'graph includes stitches',
+  stitchGraph.nodes.some((node) => node.id === 'a.one') &&
+    stitchGraph.nodes.some((node) => node.id === 'a.two'),
+)
+check(
+  'graph links stitches',
+  stitchGraph.edges.some(
+    (edge) => edge.source === 'a' && edge.target === 'a.one',
+  ) &&
+    stitchGraph.edges.some(
+      (edge) => edge.source === 'a.one' && edge.target === 'a.two',
+    ),
+)
+
+const stitchCompiled = compileInk(stitchFiles['main.ink'])
+if (stitchCompiled.ok) {
+  const stitchVisited = new Set<string>()
+  readTurn(stitchCompiled.story, (path) => {
+    const node = nodeFromPath(path)
+    if (node) stitchVisited.add(node)
+  })
+  check('coverage includes stitch', stitchVisited.has('a.one'))
+}
+
 const coverageStory = new Story(compiled.json)
 const coveredPaths = new Set<string>()
 readTurn(coverageStory, (path) => {
-  const knot = knotFromPath(path)
+  const knot = nodeFromPath(path)
   if (knot) coveredPaths.add(knot)
 })
 check('coverage captures entry knot', coveredPaths.has('start'))

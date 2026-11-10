@@ -247,6 +247,10 @@
   background: var(--accent);
 }
 
+.lg.stitch {
+  border: 1px solid var(--muted);
+}
+
 .lg.covered {
   background: var(--ok);
 }
@@ -309,6 +313,15 @@
 
 .knot-card.entry {
   border-color: var(--accent);
+}
+
+.knot-card.stitch {
+  background: var(--panel);
+}
+
+.knot-card.stitch .knot-title {
+  font-weight: 500;
+  opacity: 0.9;
 }
 
 .knot-card.dead-end {
