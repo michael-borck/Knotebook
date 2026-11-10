@@ -12,6 +12,8 @@ export interface ExportOptions {
   json: string
   runtimeSource: string
   theme?: ExportTheme
+  cover?: string
+  assets?: Record<string, string>
 }
 
 const READER_CSS = `
@@ -29,6 +31,9 @@ html, body { margin: 0; height: 100%; background: var(--bg); color: var(--text);
 body { font: 17px/1.6 ui-serif, Georgia, 'Times New Roman', serif; display: flex; justify-content: center; }
 main { width: min(720px, 100%); padding: 40px 24px 120px; }
 h1 { font: 600 20px/1.2 ui-sans-serif, system-ui, sans-serif; letter-spacing: .02em; color: var(--muted); margin: 0 0 24px; }
+#cover { width: 100%; max-height: 220px; object-fit: cover; border-radius: 10px; border: 1px solid var(--border); margin: 0 0 20px; }
+#scene { width: 100%; max-height: 320px; object-fit: cover; border-radius: 10px; border: 1px solid var(--border); margin: 0 0 18px; }
+#cover:not([hidden]), #scene:not([hidden]) { display: block; }
 #out p { margin: 0 0 1em; }
 #choices { display: flex; flex-direction: column; gap: 8px; margin-top: 20px; }
 .choice { text-align: left; padding: 11px 14px; border-radius: 9px; border: 1px solid var(--border); background: var(--panel); color: var(--text); font: inherit; cursor: pointer; }
@@ -48,13 +53,37 @@ const READER_JS = `
   var story = new inkjs.Story(JSON.parse(STORY_JSON));
   var out = document.getElementById('out');
   var choicesEl = document.getElementById('choices');
+  var scene = document.getElementById('scene');
+  var cover = document.getElementById('cover');
+  var currentImage = null;
   var SAVE_KEY = 'pathwright:' + document.title;
+
+  if (COVER) {
+    cover.src = COVER;
+    cover.hidden = false;
+  }
 
   function esc(text) {
     return String(text)
       .replace(/&/g, '&amp;')
       .replace(/</g, '&lt;')
       .replace(/>/g, '&gt;');
+  }
+
+  function applyTags(tags) {
+    if (!tags) return;
+    for (var i = 0; i < tags.length; i += 1) {
+      var match = /^(?:image|bg):\s*(.+)$/i.exec(String(tags[i]).trim());
+      if (!match) continue;
+      var key = match[1].trim();
+      var src = ASSETS[key] || ASSETS['assets/' + key];
+      if (src) {
+        currentImage = src;
+        scene.src = src;
+        scene.hidden = false;
+      }
+      return;
+    }
   }
 
   function paint(text) {
@@ -72,7 +101,11 @@ const READER_JS = `
     try {
       localStorage.setItem(
         SAVE_KEY,
-        JSON.stringify({ state: story.state.ToJson(), html: out.innerHTML }),
+        JSON.stringify({
+          state: story.state.ToJson(),
+          html: out.innerHTML,
+          image: currentImage,
+        }),
       );
     } catch (error) {}
   }
@@ -103,7 +136,10 @@ const READER_JS = `
 
   function turn() {
     var text = '';
-    while (story.canContinue) text += story.Continue();
+    while (story.canContinue) {
+      text += story.Continue();
+      applyTags(story.currentTags);
+    }
     if (text.trim()) paint(text.trim());
     renderChoices();
     save();
@@ -116,6 +152,11 @@ const READER_JS = `
       var saved = JSON.parse(raw);
       story.state.LoadJson(saved.state);
       out.innerHTML = saved.html || '';
+      if (saved.image) {
+        currentImage = saved.image;
+        scene.src = saved.image;
+        scene.hidden = false;
+      }
       renderChoices();
       return true;
     } catch (error) {
@@ -128,6 +169,9 @@ const READER_JS = `
     story = new inkjs.Story(JSON.parse(STORY_JSON));
     out.innerHTML = '';
     choicesEl.innerHTML = '';
+    currentImage = null;
+    scene.removeAttribute('src');
+    scene.hidden = true;
     window.scrollTo(0, 0);
     turn();
   });
@@ -151,15 +195,21 @@ export function buildStandaloneHtml({
   json,
   runtimeSource,
   theme,
+  cover,
+  assets,
 }: ExportOptions): string {
   const safeTitle = escapeHtml(title)
   const storyJson = JSON.stringify(json).replace(/</g, '\\u003c')
+  const assetsJson = JSON.stringify(assets ?? {}).replace(/</g, '\\u003c')
+  const coverJson = JSON.stringify(cover ?? '')
   const themeCss = theme
     ? `:root{--bg:${theme.bg};--panel:${theme.panel};--text:${theme.text};--muted:${theme.muted};--accent:${theme.accent};--border:${theme.border};}`
     : ''
   const body = [
     '<main>',
     `<h1>${safeTitle}</h1>`,
+    '<img id="cover" alt="" hidden />',
+    '<img id="scene" alt="" hidden />',
     '<div id="out"></div>',
     '<div id="choices"></div>',
     '</main>',
@@ -178,7 +228,7 @@ export function buildStandaloneHtml({
     '<body>',
     body,
     `<script>${runtimeSource}</script>`,
-    `<script>var STORY_JSON=${storyJson};${READER_JS}</script>`,
+    `<script>var STORY_JSON=${storyJson};var ASSETS=${assetsJson};var COVER=${coverJson};${READER_JS}</script>`,
     '</body>',
     '</html>',
   ].join('\n')

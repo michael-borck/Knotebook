@@ -43,11 +43,9 @@ check('html runtime inlined', html.includes('inkjs'))
 check('html escaped title', html.includes('Smoke &amp; &lt;Test&gt;'))
 
 const start = html.indexOf('var STORY_JSON=') + 'var STORY_JSON='.length
-const end = html.indexOf('</script>', start)
-const segment = html.slice(start, end)
-const cut = segment.search(/;\s*\(function/)
-check('story json embedded', cut > 0)
-const literal = segment.slice(0, cut)
+const end = html.indexOf(';var ASSETS=', start)
+check('story json embedded', end > start)
+const literal = html.slice(start, end)
 const embeddedText = JSON.parse(literal) as string
 const embeddedStory = JSON.parse(embeddedText) as { inkVersion?: number }
 check('embedded json round-trips', typeof embeddedStory.inkVersion === 'number')
@@ -76,6 +74,20 @@ check(
   'pack keeps assets',
   parsedAssetPack.pack?.cover === coverData &&
     parsedAssetPack.pack?.assets?.['assets/cover.png'] === coverData,
+)
+
+const assetHtml = buildStandaloneHtml({
+  title: 'Asset Story',
+  json: compiled.json,
+  runtimeSource: runtime,
+  cover: coverData,
+  assets: { 'assets/cover.png': coverData },
+})
+check(
+  'html embeds assets',
+  assetHtml.includes('var ASSETS=') &&
+    assetHtml.includes('assets/cover.png') &&
+    assetHtml.includes('id="scene"'),
 )
 
 const playerStory = new Story(pack.stories[0].json)

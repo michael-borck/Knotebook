@@ -395,21 +395,7 @@ function App() {
     return () => window.removeEventListener('keydown', onKeyDown)
   })
 
-  const handleExport = async () => {
-    if (!compiledJson) return
-    const html = buildStandaloneHtml({
-      title,
-      json: compiledJson,
-      runtimeSource: inkRuntimeSource,
-      theme: palette,
-    })
-    const target = await saveHtmlFile(title, html)
-    if (target) setToast(`Exported ${target}`)
-  }
-
-  const handleBuildPack = async () => {
-    if (!compiledJson) return
-    const author = source.match(/^#\s*author:\s*(.+)$/im)?.[1].trim() ?? ''
+  const collectProjectAssets = async () => {
     const assetData: Record<string, string> = {}
     let cover: string | undefined
     if (projectRoot && runningInTauri()) {
@@ -419,10 +405,32 @@ function App() {
           assetData[asset] = dataUrl
           if (asset === coverAsset) cover = dataUrl
         } catch {
-          // Skip unreadable assets; the pack is still buildable.
+          // Skip unreadable assets; the artifact is still buildable.
         }
       }
     }
+    return { assetData, cover }
+  }
+
+  const handleExport = async () => {
+    if (!compiledJson) return
+    const { assetData, cover } = await collectProjectAssets()
+    const html = buildStandaloneHtml({
+      title,
+      json: compiledJson,
+      runtimeSource: inkRuntimeSource,
+      theme: palette,
+      cover,
+      assets: assetData,
+    })
+    const target = await saveHtmlFile(title, html)
+    if (target) setToast(`Exported ${target}`)
+  }
+
+  const handleBuildPack = async () => {
+    if (!compiledJson) return
+    const author = source.match(/^#\s*author:\s*(.+)$/im)?.[1].trim() ?? ''
+    const { assetData, cover } = await collectProjectAssets()
     const pack = buildPack({
       title,
       author,
