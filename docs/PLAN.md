@@ -148,6 +148,8 @@ pushes to `main` build and publish automatically via GitHub Actions with an SSH
 deploy key. A tag-gated `release.yml` builds macOS (signed + notarized), Windows
 and Linux (unsigned) and creates a draft release, following the app-hq Tauri
 signing pattern. Tauri auto-update and the per-app updater key are still to do.
+A manual `notarize-check` workflow verifies signing credentials without creating
+a release.
 
 ### Phase 6 — polish
 Icon, signing/notarization, GitHub Actions release workflow, docs,

@@ -52,6 +52,10 @@ Apple signing uses the canonical secrets from the app-hq signing runbook
 `APPLE_API_KEY`, `APPLE_API_ISSUER`, `APPLE_API_KEY_CONTENT`). Tauri updater keys
 are per app and are not configured yet.
 
+To test signing credentials without publishing, run the **Notarize check**
+workflow manually. It builds, signs and notarizes one macOS arch and verifies it
+with `codesign`, `spctl` and `xcrun stapler`.
+
 ## Quick start
 
 ```bash
