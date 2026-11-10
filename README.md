@@ -5,10 +5,17 @@ An LLM-friendly **studio and player** for branching stories, built on
 
 ## Live
 
-- **App / Player** — https://michael-borck.github.io/Knotebook/
-- **Player directly** — https://michael-borck.github.io/Knotebook/?player=1
+- **App / Player** — https://michael-borck.github.io/knotebook-site/
+- **Player directly** — https://michael-borck.github.io/knotebook-site/?player=1
 - **Store** — https://michael-borck.github.io/knotebook-store/
 - **Submissions** — https://github.com/michael-borck/knotebook-packs
+
+The app source stays private; the built site is published to the public
+[`knotebook-site`](https://github.com/michael-borck/knotebook-site) repo:
+
+```bash
+npm run deploy:site
+```
 
 Knotebook is two apps in one codebase:
 
