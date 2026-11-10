@@ -8,6 +8,8 @@
     "build": "tsc -b && vite build",
     "typecheck": "tsc -b",
     "smoke": "tsx scripts/smoke.ts",
+    "store:build": "tsx scripts/build-catalogue.ts",
+    "store:demo": "tsx scripts/make-sample-pack.ts",
     "lint": "oxlint",
     "preview": "vite preview",
     "tauri": "tauri",

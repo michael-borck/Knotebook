@@ -102,6 +102,17 @@ Static catalogue, CI validation, sha256 + Ed25519 signature,
 
 Exit: third-party PR → reviewed → signed → installable.
 
+**First cut (implemented):**
+- `src/lib/catalogue.ts` — `pathwright-catalogue` v1, `parseCatalogue`,
+  `sha256Hex`, `fetchPackBytes`.
+- `scripts/build-catalogue.ts` — hash a folder of packs into a catalogue.
+- `scripts/make-sample-pack.ts` — bundled demo store in `public/`.
+- Player **Store** tab: catalogue URL via `?store=` / `VITE_CATALOGUE_URL` /
+  `./catalogue.json`; install verifies **SHA-256** before IndexedDB.
+- `docs/STORE.md`, `templates/submission.json`.
+- Signing (Ed25519) and the `pathwright-packs` / `pathwright-store` repos are
+  still to do.
+
 ### Phase 4 — LLM loop (differentiator)
 Bible + conventions as the generation contract; per-knot structured edits with
 diff review; compile/lint auto-retry; snapshots/rollback. BYO keys, optional

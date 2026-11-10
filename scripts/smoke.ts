@@ -1,10 +1,12 @@
 import { readFileSync } from 'node:fs'
+import { createHash } from 'node:crypto'
 import { Story } from 'inkjs/full'
 import { buildStandaloneHtml } from '../src/lib/exportHtml'
 import { choose, compileInk, readTurn } from '../src/lib/ink'
 import { countWords, lintInk } from '../src/lib/lint'
 import { DEFAULT_BIBLE } from '../src/lib/bible'
 import { buildPack, parsePack } from '../src/lib/pack'
+import { CATALOGUE_FORMAT, parseCatalogue, sha256Hex } from '../src/lib/catalogue'
 
 const failures: string[] = []
 function check(name: string, condition: boolean) {
@@ -131,6 +133,41 @@ const sub = compileInk(subFiles['sub/main.ink'], {
   rootFile: 'sub/main.ink',
 })
 check('subfolder include resolves', sub.ok)
+
+const catalogueText = JSON.stringify({
+  format: CATALOGUE_FORMAT,
+  version: 1,
+  generated: new Date().toISOString(),
+  packs: [
+    {
+      id: 'smoke-pack',
+      title: 'Smoke Pack',
+      author: 'Tester',
+      theme: 'noir',
+      sha256: 'abc123',
+      url: 'smoke.pathwright.json',
+    },
+  ],
+})
+check(
+  'catalogue parses',
+  parseCatalogue(catalogueText).catalogue?.packs.length === 1,
+)
+check('catalogue rejects junk', parseCatalogue('{"nope":true}').catalogue === null)
+
+const digestBytes = new TextEncoder().encode('pathwright')
+const digest = await sha256Hex(digestBytes.slice().buffer as ArrayBuffer)
+const expectedDigest = createHash('sha256').update(digestBytes).digest('hex')
+check('sha256 matches node', digest === expectedDigest)
+
+const demoPackBytes = readFileSync('public/sample.pathwright.json')
+const demoCatalogue = parseCatalogue(readFileSync('public/catalogue.json', 'utf8'))
+const demoDigest = createHash('sha256').update(demoPackBytes).digest('hex')
+check(
+  'demo catalogue matches pack',
+  demoCatalogue.catalogue?.packs[0]?.sha256 === demoDigest,
+)
+check('demo pack parses', parsePack(demoPackBytes.toString('utf8')).pack !== null)
 
 if (failures.length) {
   console.error('FAILED:', failures.join(', '))

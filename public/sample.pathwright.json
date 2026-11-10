@@ -1,0 +1,18 @@
+{
+  "format": "pathwright-pack",
+  "version": 1,
+  "id": "the-lantern-keepers",
+  "title": "The Lantern Keepers",
+  "author": "Pathwright",
+  "licence": "CC BY 4.0",
+  "description": "Demo pack generated from the sample story.",
+  "theme": "noir",
+  "created": "2026-11-10T00:16:55.456Z",
+  "stories": [
+    {
+      "id": "main",
+      "title": "The Lantern Keepers",
+      "json": "{\"inkVersion\":21,\"root\":[[\"#\",\"^title: The Lantern Keepers\",\"/#\",\"#\",\"^author: Pathwright\",\"/#\",{\"->\":\"start\"},[\"done\",{\"#n\":\"g-0\"}],null],\"done\",{\"start\":[[\"^The tide has gone out, leaving the harbour grey and quiet. Somewhere below the pier, a bell is ringing underwater.\",\"\\n\",\"#\",\"^bg: harbour-dusk\",\"/#\",\"ev\",\"str\",\"^Climb down to the water\",\"/str\",\"/ev\",{\"*\":\".^.c-0\",\"flg\":4},\"ev\",\"str\",\"^Follow the bell along the shore\",\"/str\",\"/ev\",{\"*\":\".^.c-1\",\"flg\":4},{\"c-0\":[\"^ \",{\"->\":\"climb\"},\"\\n\",null],\"c-1\":[\"^ \",{\"->\":\"shore\"},\"\\n\",null]}],null],\"climb\":[[\"ev\",{\"VAR?\":\"courage\"},1,\"+\",{\"VAR=\":\"courage\",\"re\":true},\"/ev\",\"^You lower yourself down the weed-slick ladder. The bell is louder here, and the water is breathing.\",\"\\n\",\"#\",\"^sfx: water\",\"/#\",\"ev\",\"str\",\"^Reach into the dark\",\"/str\",\"/ev\",{\"*\":\".^.c-0\",\"flg\":20},\"ev\",\"str\",\"^Climb back up\",\"/str\",\"/ev\",{\"*\":\".^.c-1\",\"flg\":20},{\"c-0\":[\"^ \",{\"->\":\"reach\"},\"\\n\",{\"#f\":5}],\"c-1\":[\"^ \",{\"->\":\"start\"},\"\\n\",{\"#f\":5}]}],null],\"shore\":[[\"^You pick your way along the shingle. A lantern lies half-buried in the sand, its glass unbroken.\",\"\\n\",\"#\",\"^image: lantern-on-shingle\",\"/#\",\"ev\",true,\"/ev\",{\"VAR=\":\"lantern\",\"re\":true},\"ev\",\"str\",\"^Pick up the lantern\",\"/str\",\"/ev\",{\"*\":\".^.c-0\",\"flg\":4},\"ev\",\"str\",\"^Leave it and keep walking\",\"/str\",\"/ev\",{\"*\":\".^.c-1\",\"flg\":4},{\"c-0\":[\"^ \",{\"->\":\"keep\"},\"\\n\",null],\"c-1\":[\"^ \",{\"->\":\"walk\"},\"\\n\",null]}],null],\"reach\":[\"ev\",{\"VAR?\":\"courage\"},0,\">\",\"/ev\",[{\"->\":\".^.b\",\"c\":true},{\"b\":[\"^ You steel yourself and reach in. \",{\"->\":\"reach.7\"},null]}],[{\"->\":\".^.b\"},{\"b\":[\"^ You hesitate, then reach in. \",{\"->\":\"reach.7\"},null]}],\"nop\",\"\\n\",\"^Your fingers close around something cold and patient.\",\"\\n\",\"end\",null],\"keep\":[[\"^You lift the lantern. It is warm, as if someone set it down a moment ago.\",\"\\n\",\"ev\",\"str\",\"^Light it\",\"/str\",\"/ev\",{\"*\":\".^.c-0\",\"flg\":4},\"ev\",\"str\",\"^Take it back to the harbour\",\"/str\",\"/ev\",{\"*\":\".^.c-1\",\"flg\":4},{\"c-0\":[\"^ \",{\"->\":\"light\"},\"\\n\",null],\"c-1\":[\"^ \",\"end\",\"\\n\",null]}],null],\"walk\":[\"^The bell stops. The shore is very quiet now.\",\"\\n\",\"end\",null],\"light\":[\"^The wick catches. For a moment the whole bay is gold.\",\"\\n\",\"#\",\"^anim: glow\",\"/#\",\"end\",null],\"global decl\":[\"ev\",0,{\"VAR=\":\"courage\"},false,{\"VAR=\":\"lantern\"},\"/ev\",\"end\",null]}],\"listDefs\":{}}"
+    }
+  ]
+}

@@ -1,0 +1,17 @@
+{
+  "format": "pathwright-catalogue",
+  "version": 1,
+  "generated": "2026-11-10T00:16:55.459Z",
+  "packs": [
+    {
+      "id": "the-lantern-keepers",
+      "title": "The Lantern Keepers",
+      "author": "Pathwright",
+      "theme": "noir",
+      "sha256": "73b0f59fe1da2b6e76aab7610ea9c960bc5489737623799554e6d4e70d3b04d2",
+      "url": "sample.pathwright.json",
+      "description": "Demo pack generated from the sample story.",
+      "licence": "CC BY 4.0"
+    }
+  ]
+}

@@ -29,6 +29,29 @@
 
 .player-nav {
   margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.player-nav button {
+  padding: 5px 10px;
+  border-radius: 7px;
+  border: 1px solid transparent;
+  background: transparent;
+  color: var(--muted);
+  cursor: pointer;
+  font-size: 13px;
+}
+
+.player-nav button:hover {
+  color: var(--text);
+}
+
+.player-nav button.active {
+  border-color: var(--border);
+  background: var(--panel-2);
+  color: var(--text);
 }
 
 .player-nav a {
@@ -39,6 +62,35 @@
 
 .player-nav a:hover {
   color: var(--accent);
+}
+
+.store-error {
+  border: 1px solid var(--border);
+  border-left: 3px solid var(--error);
+  border-radius: 8px;
+  padding: 12px 14px;
+  background: var(--panel);
+}
+
+.store-error p {
+  margin: 0 0 6px;
+}
+
+.store-error p:last-child {
+  margin-bottom: 0;
+}
+
+.store-error code {
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 12px;
+  color: var(--text);
+}
+
+.installed {
+  align-self: center;
+  font-size: 11px;
+  letter-spacing: 0.04em;
+  color: var(--ok);
 }
 
 .player-title {
