@@ -34,6 +34,8 @@ import {
 } from './lib/platform'
 import { buildPack } from './lib/pack'
 import { firstImageTag } from './lib/tags'
+import { parseGraph } from './lib/graph'
+import KnotGraph from './components/KnotGraph'
 import type { Issue, PlayView } from './lib/types'
 import './App.css'
 
@@ -67,12 +69,18 @@ function App() {
   const [fileContents, setFileContents] = useState<Record<string, string>>({})
   const [assets, setAssets] = useState<string[]>([])
   const [previewAsset, setPreviewAsset] = useState<string | null>(null)
+  const [editorView, setEditorView] = useState<'text' | 'map'>(() =>
+    new URLSearchParams(window.location.search).get('view') === 'map'
+      ? 'map'
+      : 'text',
+  )
   const [saveState, setSaveState] = useState<
     'idle' | 'saving' | 'saved' | 'unsaved' | 'error'
   >('idle')
   const storyRef = useRef<Story | null>(null)
   const editorRef = useRef<EditorView | null>(null)
   const lastSavedRef = useRef('')
+  const pendingJump = useRef<number | null>(null)
 
   useEffect(() => {
     const handle = window.setTimeout(() => {
@@ -194,6 +202,16 @@ function App() {
       ) ?? null,
     [assets],
   )
+
+  const graph = useMemo(() => {
+    if (activeFile && Object.keys(fileContents).length > 0) {
+      return parseGraph(
+        { ...fileContents, [activeFile]: source },
+        activeFile,
+      )
+    }
+    return parseGraph({ 'story.ink': source }, 'story.ink')
+  }, [source, fileContents, activeFile])
   const previewStyle = useMemo(
     () =>
       ({
@@ -346,6 +364,22 @@ function App() {
       setToast('Clipboard unavailable')
     }
   }
+
+  const handleGraphJump = async (line: number, file?: string) => {
+    if (file && projectRoot && file !== activeFile && file !== 'story.ink') {
+      await loadProjectFile(projectRoot, file)
+    }
+    pendingJump.current = line
+    setEditorView('text')
+  }
+
+  useEffect(() => {
+    if (editorView !== 'text' || pendingJump.current == null) return
+    const line = pendingJump.current
+    pendingJump.current = null
+    const handle = window.setTimeout(() => handleJump(line), 60)
+    return () => window.clearTimeout(handle)
+  }, [editorView])
 
   const handleOpen = async () => {
     const file = await openInkFile()
@@ -584,27 +618,50 @@ function App() {
         <section className="pane editor-pane">
           <div className="pane-head">
             <span>Story</span>
+            <div className="view-toggle">
+              <button
+                type="button"
+                className={editorView === 'text' ? 'active' : ''}
+                onClick={() => setEditorView('text')}
+              >
+                Text
+              </button>
+              <button
+                type="button"
+                className={editorView === 'map' ? 'active' : ''}
+                onClick={() => setEditorView('map')}
+              >
+                Map
+              </button>
+            </div>
             <span className="path">{path ?? 'unsaved'}</span>
             {saveState !== 'idle' && (
               <span className={`save ${saveState}`}>{saveState}</span>
             )}
           </div>
-          <div className="editor">
-            <CodeMirror
-              value={source}
-              height="100%"
-              theme={oneDark}
-              extensions={[InkLanguageSupport()]}
-              onChange={(value) => setSource(value)}
-              onCreateEditor={(view) => {
-                editorRef.current = view
-              }}
-              basicSetup={{
-                lineNumbers: true,
-                foldGutter: true,
-                highlightActiveLine: true,
-              }}
-            />
+          <div className={editorView === 'text' ? 'editor' : 'graph-pane'}>
+            {editorView === 'text' ? (
+              <CodeMirror
+                value={source}
+                height="100%"
+                theme={oneDark}
+                extensions={[InkLanguageSupport()]}
+                onChange={(value) => setSource(value)}
+                onCreateEditor={(view) => {
+                  editorRef.current = view
+                }}
+                basicSetup={{
+                  lineNumbers: true,
+                  foldGutter: true,
+                  highlightActiveLine: true,
+                }}
+              />
+            ) : (
+              <KnotGraph
+                graph={graph}
+                onJump={(line, file) => void handleGraphJump(line, file)}
+              />
+            )}
           </div>
         </section>
 

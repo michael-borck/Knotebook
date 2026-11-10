@@ -179,6 +179,103 @@
   font-size: 11px;
 }
 
+.view-toggle {
+  display: flex;
+  gap: 2px;
+}
+
+.view-toggle button {
+  padding: 3px 8px;
+  border-radius: 6px;
+  border: 1px solid transparent;
+  background: transparent;
+  color: var(--muted);
+  cursor: pointer;
+  font-size: 11px;
+}
+
+.view-toggle button.active {
+  border-color: var(--border);
+  background: var(--panel-2);
+  color: var(--text);
+}
+
+.graph-pane {
+  flex: 1;
+  min-height: 0;
+  min-width: 0;
+}
+
+.graph-wrap {
+  width: 100%;
+  height: 100%;
+}
+
+.graph-empty {
+  padding: 28px;
+  color: var(--muted);
+  text-align: center;
+}
+
+.graph-empty code {
+  color: var(--text);
+}
+
+.knot-card {
+  width: 100%;
+  height: 100%;
+  box-sizing: border-box;
+  padding: 8px 10px;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background: var(--panel-2);
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 2px;
+}
+
+.knot-card.entry {
+  border-color: var(--accent);
+}
+
+.knot-card.missing {
+  border-color: var(--error);
+  background: rgba(248, 113, 113, 0.08);
+}
+
+.knot-title {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.knot-meta {
+  font-size: 10px;
+  color: var(--muted);
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.react-flow__attribution {
+  display: none;
+}
+
+.react-flow__controls button {
+  background: var(--panel);
+  border-color: var(--border);
+  color: var(--text);
+}
+
+.react-flow__minimap {
+  background: var(--panel);
+}
+
 .editor {
   flex: 1;
   min-height: 0;

@@ -6,6 +6,7 @@ import { choose, compileInk, readTurn } from '../src/lib/ink'
 import { countWords, lintInk } from '../src/lib/lint'
 import { DEFAULT_BIBLE } from '../src/lib/bible'
 import { buildPack, parsePack } from '../src/lib/pack'
+import { parseGraph } from '../src/lib/graph'
 import { CATALOGUE_FORMAT, parseCatalogue, sha256Hex, verifyPackSignature } from '../src/lib/catalogue'
 
 const failures: string[] = []
@@ -133,6 +134,30 @@ const sub = compileInk(subFiles['sub/main.ink'], {
   rootFile: 'sub/main.ink',
 })
 check('subfolder include resolves', sub.ok)
+
+const graph = parseGraph({ 'story.ink': source }, 'story.ink')
+check(
+  'graph finds knots',
+  ['start', 'climb', 'shore', 'reach', 'keep', 'walk', 'light'].every(
+    (id) => graph.nodes.some((node) => node.id === id),
+  ),
+)
+check(
+  'graph finds edges',
+  graph.edges.some((edge) => edge.source === 'start' && edge.target === 'climb'),
+)
+check(
+  'graph marks entry',
+  graph.nodes.find((node) => node.id === 'start')?.entry === true,
+)
+
+const multiGraph = parseGraph(multiFiles, 'main.ink')
+check(
+  'graph follows includes',
+  ['start', 'act1', 'act2'].every((id) =>
+    multiGraph.nodes.some((node) => node.id === id),
+  ),
+)
 
 const catalogueText = JSON.stringify({
   format: CATALOGUE_FORMAT,

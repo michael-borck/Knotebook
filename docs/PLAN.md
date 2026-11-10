@@ -75,6 +75,16 @@ Exit: author a multi-file story, theme it, export it, reopen it.
 React Flow knot graph (InkVisual model), coverage, dead-end/unreachable
 highlighting.
 
+**First cut (implemented):**
+- `src/lib/graph.ts` parses knots and diverts, including files pulled in by
+  `INCLUDE`; entry knots and missing targets are detected.
+- `src/components/KnotGraph.tsx` lays the graph out with dagre and renders it
+  with React Flow.
+- Studio **Text / Map** toggle; click a knot to jump to its line; the entry knot
+  is highlighted; missing targets are red.
+- `?view=map` opens the Studio directly on the map.
+- Coverage and dead-end highlighting still to do.
+
 ### Phase 2 — pack + player
 Freeze `pack.json` + theme schema. Studio builds a pack. PWA player installs to
 IndexedDB, plays offline, saves progress, renders themes.
