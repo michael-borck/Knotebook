@@ -64,12 +64,14 @@ interface KnotGraphProps {
   graph: Graph
   visited: Set<string>
   onJump: (line: number, file?: string) => void
+  onResetCoverage?: () => void
 }
 
 export default function KnotGraph({
   graph,
   visited,
   onJump,
+  onResetCoverage,
 }: KnotGraphProps) {
   const { nodes, edges } = useMemo(() => {
     const layout = new dagre.graphlib.Graph()
@@ -157,6 +159,15 @@ export default function KnotGraph({
         <span className="legend-count">
           {coveredCount}/{realNodes.length} covered
         </span>
+        {onResetCoverage && (
+          <button
+            type="button"
+            className="legend-reset"
+            onClick={onResetCoverage}
+          >
+            Reset
+          </button>
+        )}
       </div>
       <ReactFlow
         nodes={nodes}

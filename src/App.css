@@ -267,6 +267,22 @@
   color: var(--text);
 }
 
+.legend-reset {
+  pointer-events: auto;
+  padding: 2px 7px;
+  border-radius: 5px;
+  border: 1px solid var(--border);
+  background: var(--panel-2);
+  color: var(--muted);
+  cursor: pointer;
+  font-size: 11px;
+}
+
+.legend-reset:hover {
+  border-color: var(--accent);
+  color: var(--text);
+}
+
 .graph-empty {
   padding: 28px;
   color: var(--muted);

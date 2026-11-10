@@ -36,6 +36,7 @@ import { buildPack } from './lib/pack'
 import { firstImageTag } from './lib/tags'
 import { parseGraph } from './lib/graph'
 import KnotGraph from './components/KnotGraph'
+import { clearCoverage, loadCoverage, saveCoverage } from './lib/coverage'
 import type { Issue, PlayView } from './lib/types'
 import './App.css'
 
@@ -74,7 +75,8 @@ function App() {
       ? 'map'
       : 'text',
   )
-  const [visited, setVisited] = useState<Set<string>>(() => new Set())
+  const [visited, setVisited] = useState<Set<string>>(() => loadCoverage('sample'))
+  const visitedRef = useRef(visited)
   const [saveState, setSaveState] = useState<
     'idle' | 'saving' | 'saved' | 'unsaved' | 'error'
   >('idle')
@@ -82,6 +84,21 @@ function App() {
   const editorRef = useRef<EditorView | null>(null)
   const lastSavedRef = useRef('')
   const pendingJump = useRef<number | null>(null)
+
+  const coverageKey =
+    projectRoot && activeFile
+      ? `project:${projectRoot}::${activeFile}`
+      : path
+        ? `file:${path}`
+        : 'sample'
+
+  useEffect(() => {
+    visitedRef.current = visited
+  }, [visited])
+
+  useEffect(() => {
+    saveCoverage(coverageKey, visited)
+  }, [coverageKey, visited])
 
   useEffect(() => {
     const handle = window.setTimeout(() => {
@@ -98,7 +115,7 @@ function App() {
         setCompiledJson(result.json)
         setCompileOk(true)
         setCompileIssues(result.issues)
-        const visitedPaths = new Set<string>()
+        const visitedPaths = new Set(visitedRef.current)
         setPlay(
           readTurn(result.story, (path) => {
             const knot = knotFromPath(path)
@@ -251,6 +268,8 @@ function App() {
     if (!compiledJson) return
     const story = new Story(compiledJson)
     storyRef.current = story
+    setVisited(new Set())
+    clearCoverage(coverageKey)
     const visitedPaths = new Set<string>()
     setPlay(
       readTurn(story, (path) => {
@@ -309,6 +328,7 @@ function App() {
     setProjectFiles(files ?? projectFiles)
     setActiveFile(relative)
     setPath(joinPath(root, relative))
+    setVisited(loadCoverage(`project:${root}::${relative}`))
     setSource(text)
     setSaveState('saved')
   }
@@ -403,6 +423,12 @@ function App() {
     return () => window.clearTimeout(handle)
   }, [editorView])
 
+  const handleResetCoverage = () => {
+    setVisited(new Set())
+    clearCoverage(coverageKey)
+    setToast('Coverage reset')
+  }
+
   const handleOpen = async () => {
     const file = await openInkFile()
     if (!file) return
@@ -412,6 +438,7 @@ function App() {
     setFileContents({})
     setAssets([])
     setPreviewAsset(null)
+    setVisited(loadCoverage(`file:${file.path}`))
     setSource(file.text)
     setPath(file.path)
     setToast(`Opened ${file.path}`)
@@ -683,6 +710,7 @@ function App() {
                 graph={graph}
                 visited={visited}
                 onJump={(line, file) => void handleGraphJump(line, file)}
+                onResetCoverage={handleResetCoverage}
               />
             )}
           </div>
