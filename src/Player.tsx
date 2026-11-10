@@ -1,8 +1,16 @@
-import { useMemo, useRef, useState, type ChangeEvent, type CSSProperties } from 'react'
+import {
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  type ChangeEvent,
+  type CSSProperties,
+} from 'react'
 import { Story } from 'inkjs/full'
 import { choose, readTurn } from './lib/ink'
 import { getTheme, themePalette } from './lib/themes'
 import { parsePack, type Pack } from './lib/pack'
+import { firstImageTag } from './lib/tags'
 import {
   clearProgress,
   installPack,
@@ -19,12 +27,25 @@ import './player.css'
 const EMPTY_PLAY: PlayView = { text: '', tags: [], choices: [], ended: false }
 
 export default function Player() {
-  const [library, setLibrary] = useState<LibraryEntry[]>(() => listLibrary())
+  const [library, setLibrary] = useState<LibraryEntry[]>([])
   const [pack, setPack] = useState<Pack | null>(null)
   const [turns, setTurns] = useState<string[]>([])
   const [play, setPlay] = useState<PlayView>(EMPTY_PLAY)
+  const [savedImage, setSavedImage] = useState<string | null>(null)
   const [toast, setToast] = useState<string | null>(null)
   const storyRef = useRef<Story | null>(null)
+
+  useEffect(() => {
+    let active = true
+    listLibrary()
+      .then((entries) => {
+        if (active) setLibrary(entries)
+      })
+      .catch(() => undefined)
+    return () => {
+      active = false
+    }
+  }, [])
 
   const theme = useMemo(() => getTheme(pack?.theme ?? 'base'), [pack])
   const palette = useMemo(() => themePalette(theme), [theme])
@@ -42,27 +63,39 @@ export default function Player() {
     [palette],
   )
 
-  const startPack = (next: Pack | null) => {
+  const imageValue = useMemo(
+    () => firstImageTag(play.tags) ?? savedImage,
+    [play.tags, savedImage],
+  )
+  const imageUrl = useMemo(
+    () => (pack ? resolvePackAsset(pack, imageValue) : undefined),
+    [pack, imageValue],
+  )
+
+  const startPack = async (id: string) => {
+    const next = await loadPack(id)
     if (!next) {
       setToast('That pack is no longer installed.')
       return
     }
     const story = new Story(next.stories[0].json)
     storyRef.current = story
-    const saved = loadProgress(next.id)
+    const saved = await loadProgress(next.id)
     if (saved) {
       try {
         story.state.LoadJson(saved.state)
         setTurns(saved.turns ?? [])
+        setSavedImage(saved.image ?? null)
         setPlay(readTurn(story))
         setPack(next)
         return
       } catch {
-        clearProgress(next.id)
+        await clearProgress(next.id)
       }
     }
     const first = readTurn(story)
     setTurns(first.text ? [first.text] : [])
+    setSavedImage(null)
     setPlay(first)
     setPack(next)
   }
@@ -73,18 +106,25 @@ export default function Player() {
     if (!story) return
     const next = choose(story, index)
     const nextTurns = next.text ? [...turns, next.text] : turns
+    const nextImage = firstImageTag(next.tags) ?? savedImage
     setTurns(nextTurns)
+    setSavedImage(nextImage)
     setPlay(next)
-    saveProgress(pack.id, { state: story.state.ToJson(), turns: nextTurns })
+    void saveProgress(pack.id, {
+      state: story.state.ToJson(),
+      turns: nextTurns,
+      image: nextImage ?? undefined,
+    })
   }
 
   const handleRestart = () => {
     if (!pack) return
-    clearProgress(pack.id)
+    void clearProgress(pack.id)
     const story = new Story(pack.stories[0].json)
     storyRef.current = story
     const first = readTurn(story)
     setTurns(first.text ? [first.text] : [])
+    setSavedImage(null)
     setPlay(first)
   }
 
@@ -98,8 +138,8 @@ export default function Player() {
       return
     }
     try {
-      installPack(imported)
-      setLibrary(listLibrary())
+      await installPack(imported)
+      setLibrary(await listLibrary())
       setToast(`Installed ${imported.title}`)
     } catch (error) {
       setToast(
@@ -108,14 +148,14 @@ export default function Player() {
     }
   }
 
-  const handleRemove = (id: string) => {
-    removePack(id)
-    setLibrary(listLibrary())
+  const handleRemove = async (id: string) => {
+    await removePack(id)
+    setLibrary(await listLibrary())
   }
 
   const backToLibrary = () => {
     setPack(null)
-    setLibrary(listLibrary())
+    void listLibrary().then(setLibrary)
   }
 
   if (!pack) {
@@ -157,20 +197,23 @@ export default function Player() {
                     className="pack-card"
                     style={{ borderColor: entryTheme.accent }}
                   >
+                    {entry.cover && (
+                      <img className="pack-cover" src={entry.cover} alt="" />
+                    )}
                     <div className="pack-theme">{entryTheme.title}</div>
                     <h2>{entry.title}</h2>
                     <p className="muted">{entry.author || 'Unknown author'}</p>
                     <div className="pack-actions">
                       <button
                         type="button"
-                        onClick={() => startPack(loadPack(entry.id))}
+                        onClick={() => void startPack(entry.id)}
                       >
                         Play
                       </button>
                       <button
                         type="button"
                         className="ghost"
-                        onClick={() => handleRemove(entry.id)}
+                        onClick={() => void handleRemove(entry.id)}
                       >
                         Remove
                       </button>
@@ -196,6 +239,7 @@ export default function Player() {
         <span className="theme-chip">{theme.title}</span>
       </header>
       <main className="reader">
+        {imageUrl && <img className="scene-image" src={imageUrl} alt="" />}
         <div className="reader-text">
           {turns.map((turn, turnIndex) =>
             turn.split(/\n{2,}/).map((paragraph, index) => (
@@ -226,4 +270,9 @@ export default function Player() {
       {toast && <div className="toast">{toast}</div>}
     </div>
   )
+}
+
+function resolvePackAsset(pack: Pack, value: string | null): string | undefined {
+  if (!value || !pack.assets) return undefined
+  return pack.assets[value] ?? pack.assets[`assets/${value}`]
 }

@@ -63,6 +63,21 @@ const parsedPack = parsePack(JSON.stringify(pack))
 check('pack round-trips', parsedPack.pack?.title === 'Smoke Pack')
 check('pack rejects junk', parsePack('{"nope":true}').pack === null)
 
+const coverData = 'data:image/png;base64,AAAA'
+const assetPack = buildPack({
+  title: 'Asset Pack',
+  theme: 'kingdom',
+  storyJson: compiled.json,
+  cover: coverData,
+  assets: { 'assets/cover.png': coverData },
+})
+const parsedAssetPack = parsePack(JSON.stringify(assetPack))
+check(
+  'pack keeps assets',
+  parsedAssetPack.pack?.cover === coverData &&
+    parsedAssetPack.pack?.assets?.['assets/cover.png'] === coverData,
+)
+
 const playerStory = new Story(pack.stories[0].json)
 const playerFirst = readTurn(playerStory)
 check('player opens pack', playerFirst.choices.length === 2)

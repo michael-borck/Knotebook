@@ -1,6 +1,10 @@
 use std::fs;
 use std::path::{Path, PathBuf};
 
+use base64::{engine::general_purpose::STANDARD, Engine as _};
+
+const ASSET_EXTENSIONS: [&str; 6] = ["png", "jpg", "jpeg", "gif", "webp", "avif"];
+
 #[tauri::command]
 fn read_text_file(path: String) -> Result<String, String> {
   fs::read_to_string(&path).map_err(|e| e.to_string())
@@ -78,6 +82,89 @@ fn is_ink_file(path: &Path) -> bool {
     .unwrap_or(false)
 }
 
+#[tauri::command]
+fn list_asset_files(root: String) -> Result<Vec<String>, String> {
+  let assets_dir = PathBuf::from(&root).join("assets");
+  if !assets_dir.is_dir() {
+    return Ok(Vec::new());
+  }
+  let mut files = Vec::new();
+  collect_asset_files(&assets_dir, &assets_dir, &mut files).map_err(|e| e.to_string())?;
+  files.sort();
+  Ok(files
+    .into_iter()
+    .map(|relative| format!("assets/{relative}"))
+    .collect())
+}
+
+fn collect_asset_files(
+  dir: &Path,
+  base: &Path,
+  files: &mut Vec<String>,
+) -> std::io::Result<()> {
+  for entry in fs::read_dir(dir)? {
+    let entry = entry?;
+    let name = entry.file_name().to_string_lossy().to_string();
+    if name.starts_with('.') {
+      continue;
+    }
+    let path = entry.path();
+    let file_type = entry.file_type()?;
+    if file_type.is_dir() {
+      collect_asset_files(&path, base, files)?;
+    } else if file_type.is_file() && is_asset_file(&path) {
+      if let Ok(relative) = path.strip_prefix(base) {
+        files.push(relative.to_string_lossy().replace('\\', "/"));
+      }
+    }
+  }
+  Ok(())
+}
+
+fn is_asset_file(path: &Path) -> bool {
+  path
+    .extension()
+    .and_then(|extension| extension.to_str())
+    .map(|extension| {
+      ASSET_EXTENSIONS
+        .iter()
+        .any(|allowed| extension.eq_ignore_ascii_case(allowed))
+    })
+    .unwrap_or(false)
+}
+
+#[tauri::command]
+fn read_asset_data_url(path: String) -> Result<String, String> {
+  let bytes = fs::read(&path).map_err(|e| e.to_string())?;
+  let mime = mime_for_path(Path::new(&path));
+  Ok(format!("data:{mime};base64,{}", STANDARD.encode(bytes)))
+}
+
+fn mime_for_path(path: &Path) -> &'static str {
+  match path
+    .extension()
+    .and_then(|extension| extension.to_str())
+    .map(|extension| extension.to_ascii_lowercase())
+    .as_deref()
+  {
+    Some("png") => "image/png",
+    Some("jpg") | Some("jpeg") => "image/jpeg",
+    Some("gif") => "image/gif",
+    Some("webp") => "image/webp",
+    Some("avif") => "image/avif",
+    _ => "application/octet-stream",
+  }
+}
+
+#[tauri::command]
+fn copy_file(source: String, destination: String) -> Result<(), String> {
+  if let Some(parent) = Path::new(&destination).parent() {
+    fs::create_dir_all(parent).map_err(|e| e.to_string())?;
+  }
+  fs::copy(&source, &destination).map_err(|e| e.to_string())?;
+  Ok(())
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
   tauri::Builder::default()
@@ -97,7 +184,10 @@ pub fn run() {
       read_optional_text_file,
       write_text_file,
       backup_and_write,
-      list_ink_files
+      list_ink_files,
+      list_asset_files,
+      read_asset_data_url,
+      copy_file
     ])
     .run(tauri::generate_context!())
     .expect("error while building tauri application");

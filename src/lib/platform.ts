@@ -26,6 +26,35 @@ export async function listInkFiles(root: string): Promise<string[]> {
   return invoke<string[]>('list_ink_files', { root })
 }
 
+export async function listAssetFiles(root: string): Promise<string[]> {
+  return invoke<string[]>('list_asset_files', { root })
+}
+
+export async function readAssetDataUrl(path: string): Promise<string> {
+  return invoke<string>('read_asset_data_url', { path })
+}
+
+export async function copyFile(
+  source: string,
+  destination: string,
+): Promise<void> {
+  await invoke('copy_file', { source, destination })
+}
+
+export async function pickImageFile(): Promise<string | null> {
+  if (!isTauri()) return null
+  const selected = await open({
+    multiple: false,
+    filters: [
+      {
+        name: 'Images',
+        extensions: ['png', 'jpg', 'jpeg', 'gif', 'webp', 'avif'],
+      },
+    ],
+  })
+  return typeof selected === 'string' ? selected : null
+}
+
 export async function readTextFile(path: string): Promise<string> {
   return invoke<string>('read_text_file', { path })
 }

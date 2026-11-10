@@ -19,6 +19,8 @@ export interface Pack {
   description: string
   theme: string
   created: string
+  cover?: string
+  assets?: Record<string, string>
   stories: PackStory[]
 }
 
@@ -30,6 +32,8 @@ export interface BuildPackInput {
   theme: string
   storyJson: string
   bible?: StoryBible
+  cover?: string
+  assets?: Record<string, string>
 }
 
 export function slugify(value: string): string {
@@ -53,6 +57,8 @@ export function buildPack(input: BuildPackInput): Pack {
     description: input.description?.trim() || input.bible?.premise || '',
     theme: input.theme || 'base',
     created: new Date().toISOString(),
+    cover: input.cover,
+    assets: input.assets,
     stories: [{ id: 'main', title, json: input.storyJson }],
   }
 }
@@ -66,6 +72,11 @@ export function isPack(value: unknown): value is Pack {
     typeof pack.id === 'string' &&
     typeof pack.title === 'string' &&
     typeof pack.theme === 'string' &&
+    (pack.cover === undefined || typeof pack.cover === 'string') &&
+    (pack.assets === undefined ||
+      (typeof pack.assets === 'object' &&
+        pack.assets !== null &&
+        Object.values(pack.assets).every((value) => typeof value === 'string'))) &&
     Array.isArray(pack.stories) &&
     pack.stories.length > 0 &&
     pack.stories.every(

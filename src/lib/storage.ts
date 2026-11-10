@@ -1,9 +1,9 @@
 import type { Pack } from './pack'
 
-const LIBRARY_KEY = 'pathwright.library.v1'
-
-const packKey = (id: string) => `pathwright.pack.${id}`
-const progressKey = (id: string) => `pathwright.progress.${id}`
+const DB_NAME = 'pathwright'
+const DB_VERSION = 1
+const PACK_STORE = 'packs'
+const PROGRESS_STORE = 'progress'
 
 export interface LibraryEntry {
   id: string
@@ -11,74 +11,150 @@ export interface LibraryEntry {
   author: string
   theme: string
   installed: string
+  cover?: string
 }
 
 export interface SavedProgress {
   state: string
   turns: string[]
+  image?: string
 }
 
-export function listLibrary(): LibraryEntry[] {
-  try {
-    const raw = localStorage.getItem(LIBRARY_KEY)
-    return raw ? (JSON.parse(raw) as LibraryEntry[]) : []
-  } catch {
-    return []
-  }
+interface PackRecord {
+  id: string
+  pack: Pack
+  installed: string
 }
 
-export function installPack(pack: Pack): LibraryEntry {
-  try {
-    localStorage.setItem(packKey(pack.id), JSON.stringify(pack))
-  } catch {
-    throw new Error('Not enough local storage for this pack.')
-  }
-  const entry: LibraryEntry = {
+interface ProgressRecord {
+  id: string
+  state: string
+  turns: string[]
+  image?: string
+}
+
+let dbPromise: Promise<IDBDatabase> | null = null
+
+function openDb(): Promise<IDBDatabase> {
+  if (dbPromise) return dbPromise
+  dbPromise = new Promise((resolve, reject) => {
+    const request = indexedDB.open(DB_NAME, DB_VERSION)
+    request.onupgradeneeded = () => {
+      const db = request.result
+      if (!db.objectStoreNames.contains(PACK_STORE)) {
+        db.createObjectStore(PACK_STORE, { keyPath: 'id' })
+      }
+      if (!db.objectStoreNames.contains(PROGRESS_STORE)) {
+        db.createObjectStore(PROGRESS_STORE, { keyPath: 'id' })
+      }
+    }
+    request.onsuccess = () => resolve(request.result)
+    request.onerror = () =>
+      reject(request.error ?? new Error('Could not open local storage'))
+  })
+  return dbPromise
+}
+
+function requestResult<T>(request: IDBRequest<T>): Promise<T> {
+  return new Promise((resolve, reject) => {
+    request.onsuccess = () => resolve(request.result)
+    request.onerror = () =>
+      reject(request.error ?? new Error('Storage request failed'))
+  })
+}
+
+function transactionDone(tx: IDBTransaction): Promise<void> {
+  return new Promise((resolve, reject) => {
+    tx.oncomplete = () => resolve()
+    tx.onerror = () => reject(tx.error ?? new Error('Storage transaction failed'))
+    tx.onabort = () =>
+      reject(tx.error ?? new Error('Storage transaction aborted'))
+  })
+}
+
+export async function listLibrary(): Promise<LibraryEntry[]> {
+  const db = await openDb()
+  const tx = db.transaction(PACK_STORE, 'readonly')
+  const records = await requestResult(
+    tx.objectStore(PACK_STORE).getAll() as IDBRequest<PackRecord[]>,
+  )
+  return records
+    .sort((a, b) => b.installed.localeCompare(a.installed))
+    .map(({ pack, installed }) => ({
+      id: pack.id,
+      title: pack.title,
+      author: pack.author,
+      theme: pack.theme,
+      installed,
+      cover: pack.cover,
+    }))
+}
+
+export async function installPack(pack: Pack): Promise<LibraryEntry> {
+  const db = await openDb()
+  const installed = new Date().toISOString()
+  const tx = db.transaction(PACK_STORE, 'readwrite')
+  tx.objectStore(PACK_STORE).put({ id: pack.id, pack, installed })
+  await transactionDone(tx)
+  return {
     id: pack.id,
     title: pack.title,
     author: pack.author,
     theme: pack.theme,
-    installed: new Date().toISOString(),
-  }
-  const library = listLibrary().filter((item) => item.id !== pack.id)
-  library.unshift(entry)
-  localStorage.setItem(LIBRARY_KEY, JSON.stringify(library))
-  return entry
-}
-
-export function loadPack(id: string): Pack | null {
-  try {
-    const raw = localStorage.getItem(packKey(id))
-    return raw ? (JSON.parse(raw) as Pack) : null
-  } catch {
-    return null
+    installed,
+    cover: pack.cover,
   }
 }
 
-export function removePack(id: string): void {
-  localStorage.removeItem(packKey(id))
-  localStorage.removeItem(progressKey(id))
-  const library = listLibrary().filter((item) => item.id !== id)
-  localStorage.setItem(LIBRARY_KEY, JSON.stringify(library))
+export async function loadPack(id: string): Promise<Pack | null> {
+  const db = await openDb()
+  const tx = db.transaction(PACK_STORE, 'readonly')
+  const record = await requestResult(
+    tx.objectStore(PACK_STORE).get(id) as IDBRequest<PackRecord | undefined>,
+  )
+  return record?.pack ?? null
 }
 
-export function saveProgress(id: string, progress: SavedProgress): void {
-  try {
-    localStorage.setItem(progressKey(id), JSON.stringify(progress))
-  } catch {
-    // Progress is best-effort; a full quota should not break play.
+export async function removePack(id: string): Promise<void> {
+  const db = await openDb()
+  const tx = db.transaction([PACK_STORE, PROGRESS_STORE], 'readwrite')
+  tx.objectStore(PACK_STORE).delete(id)
+  tx.objectStore(PROGRESS_STORE).delete(id)
+  await transactionDone(tx)
+}
+
+export async function saveProgress(
+  id: string,
+  progress: SavedProgress,
+): Promise<void> {
+  const db = await openDb()
+  const record: ProgressRecord = {
+    id,
+    state: progress.state,
+    turns: progress.turns,
+    image: progress.image,
   }
+  const tx = db.transaction(PROGRESS_STORE, 'readwrite')
+  tx.objectStore(PROGRESS_STORE).put(record)
+  await transactionDone(tx)
 }
 
-export function loadProgress(id: string): SavedProgress | null {
-  try {
-    const raw = localStorage.getItem(progressKey(id))
-    return raw ? (JSON.parse(raw) as SavedProgress) : null
-  } catch {
-    return null
-  }
+export async function loadProgress(id: string): Promise<SavedProgress | null> {
+  const db = await openDb()
+  const tx = db.transaction(PROGRESS_STORE, 'readonly')
+  const record = await requestResult(
+    tx.objectStore(PROGRESS_STORE).get(id) as IDBRequest<
+      ProgressRecord | undefined
+    >,
+  )
+  return record
+    ? { state: record.state, turns: record.turns, image: record.image }
+    : null
 }
 
-export function clearProgress(id: string): void {
-  localStorage.removeItem(progressKey(id))
+export async function clearProgress(id: string): Promise<void> {
+  const db = await openDb()
+  const tx = db.transaction(PROGRESS_STORE, 'readwrite')
+  tx.objectStore(PROGRESS_STORE).delete(id)
+  await transactionDone(tx)
 }

@@ -17,10 +17,14 @@ import inkRuntimeSource from './lib/inkRuntime'
 import { THEMES, getTheme, themePalette } from './lib/themes'
 import {
   backupAndWrite,
+  copyFile,
   joinPath,
+  listAssetFiles,
   listInkFiles,
   openInkFile,
   openProjectFolder,
+  pickImageFile,
+  readAssetDataUrl,
   readOptionalTextFile,
   readTextFile,
   runningInTauri,
@@ -29,6 +33,7 @@ import {
   savePackFile,
 } from './lib/platform'
 import { buildPack } from './lib/pack'
+import { firstImageTag } from './lib/tags'
 import type { Issue, PlayView } from './lib/types'
 import './App.css'
 
@@ -60,6 +65,8 @@ function App() {
   const [projectFiles, setProjectFiles] = useState<string[]>([])
   const [activeFile, setActiveFile] = useState<string | null>(null)
   const [fileContents, setFileContents] = useState<Record<string, string>>({})
+  const [assets, setAssets] = useState<string[]>([])
+  const [previewAsset, setPreviewAsset] = useState<string | null>(null)
   const [saveState, setSaveState] = useState<
     'idle' | 'saving' | 'saved' | 'unsaved' | 'error'
   >('idle')
@@ -103,6 +110,22 @@ function App() {
         : { ...previous, [activeFile]: source },
     )
   }, [source, activeFile])
+
+  useEffect(() => {
+    let cancelled = false
+    setPreviewAsset(null)
+    const value = firstImageTag(play.tags)
+    if (!value || !projectRoot || !runningInTauri()) return
+    if (!/^assets\//i.test(value)) return
+    readAssetDataUrl(joinPath(projectRoot, value))
+      .then((url) => {
+        if (!cancelled) setPreviewAsset(url)
+      })
+      .catch(() => undefined)
+    return () => {
+      cancelled = true
+    }
+  }, [play.tags, projectRoot])
 
   useEffect(() => {
     if (!toast) return
@@ -164,6 +187,13 @@ function App() {
 
   const theme = useMemo(() => getTheme(bible.theme), [bible.theme])
   const palette = useMemo(() => themePalette(theme), [theme])
+  const coverAsset = useMemo(
+    () =>
+      assets.find((asset) =>
+        /(^|\/)cover\.(png|jpe?g|gif|webp|avif)$/i.test(asset),
+      ) ?? null,
+    [assets],
+  )
   const previewStyle = useMemo(
     () =>
       ({
@@ -268,6 +298,9 @@ function App() {
       }),
     )
     setFileContents(contents)
+    const assetFiles = await listAssetFiles(root)
+    setAssets(assetFiles)
+    setPreviewAsset(null)
     await loadProjectFile(root, preferred, files)
     const bibleRaw = await readOptionalTextFile(
       joinPath(root, 'pathwright.bible.json'),
@@ -287,6 +320,33 @@ function App() {
     await loadProjectFile(projectRoot, relative)
   }
 
+  const handleAddImage = async () => {
+    if (!projectRoot || !runningInTauri()) {
+      setToast('Add images from the desktop app')
+      return
+    }
+    const sourcePath = await pickImageFile()
+    if (!sourcePath) return
+    const name = sourcePath.split(/[\\/]/).pop()
+    if (!name) return
+    try {
+      await copyFile(sourcePath, joinPath(projectRoot, `assets/${name}`))
+      setAssets(await listAssetFiles(projectRoot))
+      setToast(`Added ${name}`)
+    } catch {
+      setToast('Could not add that image')
+    }
+  }
+
+  const handleCopyAsset = async (asset: string) => {
+    try {
+      await navigator.clipboard.writeText(asset)
+      setToast(`Copied ${asset}`)
+    } catch {
+      setToast('Clipboard unavailable')
+    }
+  }
+
   const handleOpen = async () => {
     const file = await openInkFile()
     if (!file) return
@@ -294,6 +354,8 @@ function App() {
     setProjectFiles([])
     setActiveFile(null)
     setFileContents({})
+    setAssets([])
+    setPreviewAsset(null)
     setSource(file.text)
     setPath(file.path)
     setToast(`Opened ${file.path}`)
@@ -348,6 +410,19 @@ function App() {
   const handleBuildPack = async () => {
     if (!compiledJson) return
     const author = source.match(/^#\s*author:\s*(.+)$/im)?.[1].trim() ?? ''
+    const assetData: Record<string, string> = {}
+    let cover: string | undefined
+    if (projectRoot && runningInTauri()) {
+      for (const asset of assets) {
+        try {
+          const dataUrl = await readAssetDataUrl(joinPath(projectRoot, asset))
+          assetData[asset] = dataUrl
+          if (asset === coverAsset) cover = dataUrl
+        } catch {
+          // Skip unreadable assets; the pack is still buildable.
+        }
+      }
+    }
     const pack = buildPack({
       title,
       author,
@@ -355,8 +430,15 @@ function App() {
       theme: bible.theme,
       storyJson: compiledJson,
       bible,
+      cover,
+      assets: assetData,
     })
-    const target = await savePackFile(title, JSON.stringify(pack, null, 2))
+    const json = JSON.stringify(pack, null, 2)
+    if (json.length > 16_000_000) {
+      setToast('Pack is too large (16 MB). Remove some assets.')
+      return
+    }
+    const target = await savePackFile(title, json)
     if (target) setToast(`Pack saved ${target}`)
   }
 
@@ -461,6 +543,33 @@ function App() {
                 </li>
               ))}
             </ul>
+            <div className="section-label">
+              <span>Assets</span>
+              <button
+                type="button"
+                className="mini"
+                onClick={() => void handleAddImage()}
+              >
+                Add image…
+              </button>
+            </div>
+            {coverAsset && <p className="project-root">Cover: {coverAsset}</p>}
+            <ul className="file-list">
+              {assets.map((asset) => (
+                <li key={asset}>
+                  <button
+                    type="button"
+                    title="Copy asset path"
+                    onClick={() => void handleCopyAsset(asset)}
+                  >
+                    {asset.replace(/^assets\//, '')}
+                  </button>
+                </li>
+              ))}
+              {assets.length === 0 && (
+                <li className="muted small">No images yet.</li>
+              )}
+            </ul>
           </div>
         </aside>
 
@@ -523,6 +632,7 @@ function App() {
                 onChoose={handleChoose}
                 onRestart={handleRestart}
                 themeStyle={previewStyle}
+                imageUrl={previewAsset}
               />
             )}
             {tab === 'issues' && (
@@ -554,6 +664,7 @@ interface PreviewProps {
   onChoose: (index: number) => void
   onRestart: () => void
   themeStyle: CSSProperties
+  imageUrl: string | null
 }
 
 function Preview({
@@ -562,9 +673,11 @@ function Preview({
   onChoose,
   onRestart,
   themeStyle,
+  imageUrl,
 }: PreviewProps) {
   return (
     <div className="preview" style={themeStyle}>
+      {imageUrl && <img className="preview-image" src={imageUrl} alt="" />}
       <div className="story-text">
         {play.text ? (
           play.text.split(/\n{2,}/).map((paragraph, index) => (

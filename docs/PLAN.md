@@ -84,11 +84,13 @@ Exit: install a pack, play offline, progress survives reload.
 **First cut (implemented):**
 - `src/lib/pack.ts` — `pathwright-pack` v1, `buildPack`, `parsePack`.
 - Studio **Build pack** writes `<slug>.pathwright.json` (manifest + compiled
-  story JSON inline).
+  story JSON + `assets` as data URLs + optional `cover`).
+- Project **assets**: `assets/` listing, **Add image…**, and `cover.*`
+  auto-detected as the pack cover.
 - Player at `?player=1` (`src/Player.tsx`): import pack, library, play, restore
-  progress, restart, themes.
-- Storage is `localStorage` for now (`src/lib/storage.ts`); upgrade to IndexedDB
-  when packs carry assets.
+  progress, restart, themes, cover art, and scene images from `# image:` /
+  `# bg:` tags that point at `assets/...`.
+- Storage is **IndexedDB** (`src/lib/storage.ts`, `packs` + `progress` stores).
 - PWA shell: `public/manifest.webmanifest`, `public/sw.js`, icons; the service
   worker registers in browsers only (not in Tauri).
 
@@ -119,7 +121,7 @@ accessibility.
 | Player tech | Share core; one React codebase for now |
 | Theme IDs | Canonical `kingdom`; alias `mystical → kingdom`; keep `base` |
 | Signing | Ed25519 + sha256 from Phase 3 |
-| Pack storage | `localStorage` in the player for now; IndexedDB when assets land |
+| Pack storage | IndexedDB (`packs` + `progress` stores) |
 | Player route | Same build, `?player=1`; separate bundle later if needed |
 | LLM | BYO key; Tauri keychain, PWA localStorage; Ollama; diff-based edits |
 | Accounts / backend | None until proven |
