@@ -1,7 +1,7 @@
 {
   "name": "knotebook",
   "private": true,
-  "version": "0.0.0",
+  "version": "0.1.0",
   "type": "module",
   "scripts": {
     "dev": "vite",
@@ -16,7 +16,7 @@
     "lint": "oxlint",
     "preview": "vite preview",
     "tauri": "tauri",
-    "clean:appledouble": "find . -name '._*' -not -path './node_modules/*' -delete",
+    "clean:appledouble": "node scripts/clean-appledouble.mjs",
     "desktop:dev": "npm run clean:appledouble && CARGO_TARGET_DIR=\"$HOME/Library/Caches/knotebook-target\" tauri dev",
     "desktop:build": "npm run clean:appledouble && CARGO_TARGET_DIR=\"$HOME/Library/Caches/knotebook-target\" tauri build",
     "check": "npm run typecheck && npm run smoke"

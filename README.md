@@ -34,6 +34,24 @@ Themes reuse the Swipeverse art sets (`noir`, `kingdom`, `cyberpunk`, …).
 
 Tauri 2 · React 19 · Vite 8 · CodeMirror 6 · inkjs · TweetNaCl.
 
+## Releases
+
+- **PWA** — every push to `main` publishes to the site repo.
+- **Desktop** — push a tag `vX.Y.Z` (matching `package.json` and
+  `src-tauri/tauri.conf.json`). `.github/workflows/release.yml` builds macOS
+  (signed + notarized), Windows and Linux (unsigned) and creates a **draft**
+  GitHub release.
+
+```bash
+git tag -a v0.1.0 -m "Knotebook v0.1.0"
+git push origin v0.1.0
+```
+
+Apple signing uses the canonical secrets from the app-hq signing runbook
+(`APPLE_CERTIFICATE`, `APPLE_CERTIFICATE_PASSWORD`, `APPLE_SIGNING_IDENTITY`,
+`APPLE_API_KEY`, `APPLE_API_ISSUER`, `APPLE_API_KEY_CONTENT`). Tauri updater keys
+are per app and are not configured yet.
+
 ## Quick start
 
 ```bash

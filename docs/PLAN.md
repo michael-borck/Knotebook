@@ -145,7 +145,9 @@ exporters for a constrained subset.
 
 **Implemented so far:** the PWA is published to the public `knotebook-site` repo;
 pushes to `main` build and publish automatically via GitHub Actions with an SSH
-deploy key. Tauri release builds and auto-update are still to do.
+deploy key. A tag-gated `release.yml` builds macOS (signed + notarized), Windows
+and Linux (unsigned) and creates a draft release, following the app-hq Tauri
+signing pattern. Tauri auto-update and the per-app updater key are still to do.
 
 ### Phase 6 — polish
 Icon, signing/notarization, GitHub Actions release workflow, docs,
