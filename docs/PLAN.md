@@ -87,9 +87,11 @@ highlighting.
 - **Dead ends**: a knot with no diverts, no choices and no `-> END` is flagged.
 - **Unreachable**: knots not reachable from the entry are dimmed with a dashed
   border.
+- **Stitches** are nodes too (`knot.stitch`), resolved for `-> knot.stitch` and
+  relative `-> stitch` diverts.
+- Coverage persists per project/file in `localStorage`, survives recompiles, and
+  has a **Reset** control in the graph legend.
 - `?view=map` opens the Studio directly on the map.
-- Coverage resets when the story recompiles; persisting it across edits is still
-  to do.
 
 ### Phase 2 — pack + player
 Freeze `pack.json` + theme schema. Studio builds a pack. PWA player installs to
@@ -140,6 +142,10 @@ local Ollama.
 ### Phase 5 — publish + export
 PWA build, Tauri release matrix, auto-update. Then H5P / ChoiceScript / Twine
 exporters for a constrained subset.
+
+**Implemented so far:** the PWA is published to the public `knotebook-site` repo;
+pushes to `main` build and publish automatically via GitHub Actions with an SSH
+deploy key. Tauri release builds and auto-update are still to do.
 
 ### Phase 6 — polish
 Icon, signing/notarization, GitHub Actions release workflow, docs,

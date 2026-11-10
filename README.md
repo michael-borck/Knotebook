@@ -11,7 +11,10 @@ An LLM-friendly **studio and player** for branching stories, built on
 - **Submissions** — https://github.com/michael-borck/knotebook-packs
 
 The app source stays private; the built site is published to the public
-[`knotebook-site`](https://github.com/michael-borck/knotebook-site) repo:
+[`knotebook-site`](https://github.com/michael-borck/knotebook-site) repo.
+Pushes to `main` publish automatically via
+[`.github/workflows/publish.yml`](.github/workflows/publish.yml) (an SSH deploy
+key scoped to `knotebook-site`). Manual publish:
 
 ```bash
 npm run deploy:site
