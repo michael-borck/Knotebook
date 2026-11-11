@@ -17,12 +17,14 @@ import {
   saveSnapshot,
   type Snapshot,
 } from '../lib/snapshots'
+import { replaceKnot } from '../lib/inkSource'
 
 interface AiPanelProps {
   source: string
   bible: StoryBible
   snapshotKey: string
   issues: Issue[]
+  knots: string[]
   validate: (source: string) => Issue[]
   onApply: (source: string) => void
 }
@@ -34,12 +36,14 @@ export default function AiPanel({
   bible,
   snapshotKey,
   issues,
+  knots,
   validate,
   onApply,
 }: AiPanelProps) {
   const [settings, setSettings] = useState<AiSettings>(() => loadAiSettings())
   const [settingsOpen, setSettingsOpen] = useState(true)
   const [instruction, setInstruction] = useState('')
+  const [scope, setScope] = useState('')
   const [status, setStatus] = useState<Status>('idle')
   const [error, setError] = useState<string | null>(null)
   const [proposal, setProposal] = useState<string | null>(null)
@@ -59,6 +63,10 @@ export default function AiPanel({
     setAttempt(0)
     setRetryNote(null)
   }, [snapshotKey])
+
+  useEffect(() => {
+    if (scope && !knots.includes(scope)) setScope('')
+  }, [knots, scope])
 
   const diff = useMemo(
     () => (proposal == null ? [] : diffLines(source, proposal)),
@@ -87,7 +95,7 @@ export default function AiPanel({
     setSaved(true)
   }
 
-  const run = async (task: string) => {
+  const runWith = async (task: string, effectiveScope: string) => {
     if (status === 'running') return
     if (!settings.baseUrl.trim() || !settings.model.trim()) {
       setError('Set a base URL and model in the provider settings.')
@@ -101,19 +109,35 @@ export default function AiPanel({
     setProposal(null)
     setAttempt(0)
     setRetryNote(null)
+    const scopedTask = effectiveScope
+      ? [
+          `Revise ONLY the knot "${effectiveScope}". Return only that knot, including the === ${effectiveScope} === header, in a single ink code block. Do not change other knots.`,
+          '',
+          task || 'Improve this knot while preserving the story.',
+        ].join('\n')
+      : task
     const controller = new AbortController()
     abortRef.current = controller
     try {
-      const result = await generateWithRetry(source, task, {
+      const result = await generateWithRetry(source, scopedTask, {
         maxAttempts: 3,
-        generate: (candidate, feedback) =>
-          generateInk({
+        generate: async (candidate, feedback) => {
+          const block = await generateInk({
             settings,
             bible,
             source: candidate,
             instruction: feedback,
             signal: controller.signal,
-          }),
+          })
+          if (!effectiveScope) return block
+          const merged = replaceKnot(candidate, effectiveScope, block)
+          if (!merged) {
+            throw new Error(
+              `The model's revision did not include the knot "${effectiveScope}".`,
+            )
+          }
+          return merged
+        },
         validate,
         onAttempt: (nextAttempt) => {
           setAttempt(nextAttempt)
@@ -141,6 +165,8 @@ export default function AiPanel({
       if (abortRef.current === controller) abortRef.current = null
     }
   }
+
+  const run = (task: string) => runWith(task, scope)
 
   const apply = () => {
     if (!proposal) return
@@ -178,8 +204,10 @@ export default function AiPanel({
           `${issue.line != null ? `line ${issue.line}: ` : ''}${issue.message}`,
       )
       .join('\n')
-    void run(
+    setScope('')
+    void runWith(
       `Fix the following ink compile errors and return the complete corrected script. Keep everything else stable.\n${list}`,
+      '',
     )
   }
 
@@ -260,12 +288,38 @@ export default function AiPanel({
       </details>
 
       <label className="ai-field">
+        <span>Scope</span>
+        <select
+          value={scope}
+          onChange={(event) => {
+            setScope(event.target.value)
+            setProposal(null)
+            setStatus('idle')
+            setError(null)
+            setAttempt(0)
+            setRetryNote(null)
+          }}
+        >
+          <option value="">Whole story</option>
+          {knots.map((knot) => (
+            <option key={knot} value={knot}>
+              {knot}
+            </option>
+          ))}
+        </select>
+      </label>
+
+      <label className="ai-field">
         <span>Instruction</span>
         <textarea
           value={instruction}
           onChange={(event) => setInstruction(event.target.value)}
           rows={4}
-          placeholder="e.g. Add a new knot called epilogue and connect the ending to it. Keep the noir tone."
+          placeholder={
+            scope
+              ? `e.g. Tighten the dialogue in ${scope}.`
+              : 'e.g. Add a new knot called epilogue and connect the ending to it. Keep the noir tone.'
+          }
         />
       </label>
 
@@ -304,6 +358,7 @@ export default function AiPanel({
           <div className="ai-proposal-head">
             <strong>Proposed edit</strong>
             <span className="ai-status">
+              {scope ? `knot ${scope}` : 'whole story'} ·{' '}
               {changed ? 'Review the diff' : 'No changes'}
             </span>
           </div>

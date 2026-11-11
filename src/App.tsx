@@ -255,6 +255,14 @@ function App() {
         : undefined
     return compileInk(candidate, input).issues
   }
+
+  const knotOptions = useMemo(
+    () =>
+      graph.nodes
+        .filter((node) => node.kind === 'knot' && !node.missing)
+        .map((node) => node.id),
+    [graph],
+  )
   const previewStyle = useMemo(
     () =>
       ({
@@ -798,6 +806,7 @@ function App() {
                 bible={bible}
                 snapshotKey={coverageKey}
                 issues={issues}
+                knots={knotOptions}
                 validate={validateSource}
                 onApply={(next) => setSource(next)}
               />

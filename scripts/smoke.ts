@@ -9,6 +9,7 @@ import { buildPack, parsePack } from '../src/lib/pack'
 import { parseGraph } from '../src/lib/graph'
 import { compareVersions } from '../src/lib/version'
 import { extractInk, generateWithRetry } from '../src/lib/ai'
+import { replaceKnot, sliceKnot } from '../src/lib/inkSource'
 import { CATALOGUE_FORMAT, parseCatalogue, sha256Hex, verifyPackSignature } from '../src/lib/catalogue'
 
 const failures: string[] = []
@@ -117,6 +118,31 @@ const alwaysBad = await generateWithRetry('original', 'fix', {
 check(
   'ai retry stops',
   alwaysBad.attempts === 2 && alwaysBad.errors.length === 1,
+)
+
+const knotSource = '=== a ===\nA\n\n=== b ===\nB\n-> END\n'
+check('sliceKnot', sliceKnot(knotSource, 'a') === '=== a ===\nA')
+const replaced = replaceKnot(knotSource, 'a', 'A revised')
+check(
+  'replaceKnot keeps other knots',
+  replaced?.includes('A revised') === true &&
+    replaced?.includes('=== b ===') === true &&
+    replaced?.includes('\nA\n') === false,
+)
+const extracted = replaceKnot(
+  knotSource,
+  'a',
+  '=== a ===\nA from full\n\n=== b ===\nB from full\n',
+)
+check(
+  'replaceKnot extracts selected knot',
+  extracted?.includes('A from full') === true &&
+    extracted?.includes('B\n-> END') === true &&
+    extracted?.includes('B from full') === false,
+)
+check(
+  'replaceKnot missing knot',
+  replaceKnot(knotSource, 'nope', 'x') === null,
 )
 const parsedPack = parsePack(JSON.stringify(pack))
 check('pack round-trips', parsedPack.pack?.title === 'Smoke Pack')
