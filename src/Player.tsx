@@ -205,6 +205,14 @@ export default function Player() {
     }
   }
 
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search)
+    if (params.get('view') === 'store') {
+      void openStore()
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
   const installFromStore = async (entry: CatalogueEntry) => {
     setInstalling(entry.id)
     try {
