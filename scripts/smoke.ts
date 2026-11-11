@@ -8,6 +8,7 @@ import { DEFAULT_BIBLE } from '../src/lib/bible'
 import { buildPack, parsePack } from '../src/lib/pack'
 import { parseGraph } from '../src/lib/graph'
 import { compareVersions } from '../src/lib/version'
+import { extractInk } from '../src/lib/ai'
 import { CATALOGUE_FORMAT, parseCatalogue, sha256Hex, verifyPackSignature } from '../src/lib/catalogue'
 
 const failures: string[] = []
@@ -74,6 +75,17 @@ check(
     compareVersions('1.0.0', '1.0.0') === 0 &&
     compareVersions('0.9.0', '1.0.0') < 0,
 )
+check(
+  'extractInk fenced',
+  extractInk('Here:\n```ink\n=== start ===\nHi\n```\n')?.includes(
+    '=== start ===',
+  ) === true,
+)
+check(
+  'extractInk bare',
+  extractInk('=== start ===\nHi\n-> END')?.includes('=== start ===') === true,
+)
+check('extractInk rejects prose', extractInk('Sure, here is a story.') === null)
 const parsedPack = parsePack(JSON.stringify(pack))
 check('pack round-trips', parsedPack.pack?.title === 'Smoke Pack')
 check('pack rejects junk', parsePack('{"nope":true}').pack === null)

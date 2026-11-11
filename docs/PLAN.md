@@ -139,6 +139,14 @@ Bible + conventions as the generation contract; per-knot structured edits with
 diff review; compile/lint auto-retry; snapshots/rollback. BYO keys, optional
 local Ollama.
 
+**First cut (implemented):**
+- AI tab with provider settings (Ollama / OpenAI-compatible), stored locally.
+- Sends the bible + full script; shows the returned ink as a line diff.
+- Apply/discard, with up to 10 snapshots per project/file and restore.
+- **Fix compile errors** sends the current errors back to the model.
+- Still to do: per-knot structured edits, an automatic retry loop, and moving
+  the API key to the OS keychain in Tauri.
+
 ### Phase 5 — publish + export
 PWA build, Tauri release matrix, auto-update. Then H5P / ChoiceScript / Twine
 exporters for a constrained subset.

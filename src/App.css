@@ -408,6 +408,7 @@
 
 .tabs {
   display: flex;
+  flex-wrap: wrap;
   gap: 2px;
   padding: 8px 8px 0;
   border-bottom: 1px solid var(--border);
@@ -668,4 +669,200 @@
   border: 1px solid var(--border);
   font-size: 13px;
   box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+}
+
+.ai {
+  padding: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  min-height: 100%;
+}
+
+.ai-lede {
+  margin: 0;
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.ai-settings {
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 10px;
+  background: var(--bg);
+}
+
+.ai-settings summary {
+  cursor: pointer;
+  font-size: 12px;
+  color: var(--text);
+}
+
+.ai-field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 11px;
+  color: var(--muted);
+  margin-top: 8px;
+}
+
+.ai-field input,
+.ai-field select,
+.ai-field textarea {
+  padding: 5px 7px;
+  border-radius: 6px;
+  border: 1px solid var(--border);
+  background: var(--panel-2);
+  color: var(--text);
+  font: inherit;
+  font-size: 12px;
+}
+
+.ai-field textarea {
+  resize: vertical;
+  min-height: 70px;
+}
+
+.ai-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.ai-actions .ai-primary,
+.ai-actions .mini,
+.ai-actions .ghost {
+  padding: 6px 11px;
+  border-radius: 7px;
+  border: 1px solid var(--border);
+  background: var(--panel-2);
+  color: var(--text);
+  cursor: pointer;
+  font-size: 12px;
+}
+
+.ai-actions .ai-primary {
+  border-color: var(--accent);
+  background: var(--accent);
+  color: #160b22;
+  font-weight: 600;
+}
+
+.ai-actions .ghost {
+  background: transparent;
+  color: var(--muted);
+}
+
+.ai-actions .mini {
+  padding: 3px 8px;
+  font-size: 11px;
+}
+
+.ai-actions button:hover:not(:disabled) {
+  border-color: var(--accent);
+}
+
+.ai-actions button:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
+.ai-status {
+  font-size: 11px;
+  color: var(--muted);
+}
+
+.ai-error {
+  margin: 0;
+  color: var(--error);
+  font-size: 12px;
+  white-space: pre-wrap;
+}
+
+.ai-note {
+  margin: 8px 0 0;
+  color: var(--muted);
+  font-size: 11px;
+}
+
+.ai-proposal {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.ai-proposal-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  font-size: 12px;
+}
+
+.ai-diff {
+  max-height: 320px;
+  overflow: auto;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--bg);
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 11px;
+  line-height: 1.45;
+}
+
+.ai-diff > div {
+  padding: 0 8px;
+  white-space: pre;
+}
+
+.diff-add {
+  background: rgba(74, 222, 128, 0.1);
+  color: #bbf7d0;
+}
+
+.diff-del {
+  background: rgba(248, 113, 113, 0.1);
+  color: #fecaca;
+}
+
+.diff-same {
+  color: var(--muted);
+}
+
+.diff-sign {
+  display: inline-block;
+  width: 12px;
+  opacity: 0.7;
+}
+
+.ai-history {
+  border-top: 1px solid var(--border);
+  padding-top: 8px;
+}
+
+.ai-history summary {
+  cursor: pointer;
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.ai-history ul {
+  list-style: none;
+  margin: 8px 0 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.ai-history li {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  font-size: 11px;
+  color: var(--muted);
 }

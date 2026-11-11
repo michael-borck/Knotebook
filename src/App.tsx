@@ -36,6 +36,7 @@ import { buildPack } from './lib/pack'
 import { firstImageTag } from './lib/tags'
 import { parseGraph } from './lib/graph'
 import KnotGraph from './components/KnotGraph'
+import AiPanel from './components/AiPanel'
 import { clearCoverage, loadCoverage, saveCoverage } from './lib/coverage'
 import type { Issue, PlayView } from './lib/types'
 import './App.css'
@@ -47,7 +48,7 @@ const EMPTY_PLAY: PlayView = {
   ended: false,
 }
 
-type Tab = 'preview' | 'issues' | 'bible'
+type Tab = 'preview' | 'issues' | 'bible' | 'ai'
 
 function App() {
   const [source, setSource] = useState(sampleStory)
@@ -62,7 +63,12 @@ function App() {
   const [compileIssues, setCompileIssues] = useState<Issue[]>([])
   const [lintIssues, setLintIssues] = useState<Issue[]>([])
   const [path, setPath] = useState<string | null>(null)
-  const [tab, setTab] = useState<Tab>('preview')
+  const [tab, setTab] = useState<Tab>(() => {
+    const value = new URLSearchParams(window.location.search).get('tab')
+    return value === 'issues' || value === 'bible' || value === 'ai'
+      ? value
+      : 'preview'
+  })
   const [toast, setToast] = useState<string | null>(null)
   const [projectRoot, setProjectRoot] = useState<string | null>(null)
   const [projectFiles, setProjectFiles] = useState<string[]>([])
@@ -742,6 +748,13 @@ function App() {
             >
               Bible
             </button>
+            <button
+              type="button"
+              className={tab === 'ai' ? 'active' : ''}
+              onClick={() => setTab('ai')}
+            >
+              AI
+            </button>
           </div>
           <div className="tab-body">
             {tab === 'preview' && (
@@ -766,6 +779,15 @@ function App() {
                 onChange={setBibleText}
                 onThemeChange={handleThemeChange}
                 onApply={handleApplyBible}
+              />
+            )}
+            {tab === 'ai' && (
+              <AiPanel
+                source={source}
+                bible={bible}
+                snapshotKey={coverageKey}
+                issues={issues}
+                onApply={(next) => setSource(next)}
               />
             )}
           </div>

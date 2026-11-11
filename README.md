@@ -30,10 +30,26 @@ Knotebook is two apps in one codebase:
 - **Knotebook Studio** — Tauri desktop app: write, compile, preview, lint,
   theme, and build self-contained packs. Includes a **knot map** (React Flow)
   with coverage, dead-end and unreachable highlighting — click a knot to jump to
-  its line.
+  its line — and an **AI assistant** with diff review and snapshots.
 - **Knotebook Player** — PWA: install packs, play offline, save progress.
 
 Themes reuse the Swipeverse art sets (`noir`, `kingdom`, `cyberpunk`, …).
+
+## AI assistant
+
+The Studio's **AI** tab sends the story bible and the full script to an
+OpenAI-compatible chat endpoint, then shows the returned ink as a **diff**;
+nothing is applied until you click Apply.
+
+- **Providers** — Ollama (default `gemma3:4b`) or any OpenAI-compatible endpoint.
+  The API key is stored locally in the browser profile; use a limited-scope key.
+- **Snapshots** — the last 10 versions are kept per project/file; restore from
+  the History section.
+- **Fix compile errors** — sends the current compile errors back to the model.
+- **CORS** — Ollama must allow the app origin (`OLLAMA_ORIGINS`); OpenAI's API
+  allows browser origins.
+
+Per-knot structured edits and a fully automatic retry loop are still to come.
 
 ## Stack
 
