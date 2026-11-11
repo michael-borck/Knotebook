@@ -244,6 +244,17 @@ function App() {
     }
     return parseGraph({ 'story.ink': source }, 'story.ink')
   }, [source, fileContents, activeFile])
+
+  const validateSource = (candidate: string): Issue[] => {
+    const input =
+      activeFile && Object.keys(fileContents).length > 0
+        ? {
+            files: { ...fileContents, [activeFile]: candidate },
+            rootFile: activeFile,
+          }
+        : undefined
+    return compileInk(candidate, input).issues
+  }
   const previewStyle = useMemo(
     () =>
       ({
@@ -787,6 +798,7 @@ function App() {
                 bible={bible}
                 snapshotKey={coverageKey}
                 issues={issues}
+                validate={validateSource}
                 onApply={(next) => setSource(next)}
               />
             )}

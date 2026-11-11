@@ -1,4 +1,5 @@
 import type { StoryBible } from './bible'
+import type { Issue } from './types'
 
 export type AiProvider = 'ollama' | 'openai'
 
@@ -145,4 +146,56 @@ export async function generateInk(options: GenerateOptions): Promise<string> {
   const ink = extractInk(text)
   if (!ink) throw new Error('The model did not return an ink code block.')
   return ink
+}
+
+export interface GenerateWithRetryOptions {
+  maxAttempts?: number
+  generate: (source: string, instruction: string) => Promise<string>
+  validate: (source: string) => Issue[]
+  onAttempt?: (attempt: number) => void
+  signal?: AbortSignal
+}
+
+export interface GenerateWithRetryResult {
+  source: string
+  errors: Issue[]
+  attempts: number
+}
+
+export async function generateWithRetry(
+  source: string,
+  instruction: string,
+  options: GenerateWithRetryOptions,
+): Promise<GenerateWithRetryResult> {
+  const maxAttempts = Math.max(1, options.maxAttempts ?? 3)
+  let candidate = source
+  let feedback = instruction
+  let errors: Issue[] = []
+
+  for (let attempt = 1; attempt <= maxAttempts; attempt += 1) {
+    if (options.signal?.aborted) {
+      throw new DOMException('The request was cancelled.', 'AbortError')
+    }
+
+    options.onAttempt?.(attempt)
+    const next = await options.generate(candidate, feedback)
+    errors = options.validate(next).filter((issue) => issue.severity === 'error')
+
+    if (errors.length === 0 || attempt === maxAttempts) {
+      return { source: next, errors, attempts: attempt }
+    }
+
+    candidate = next
+    feedback = [
+      instruction,
+      '',
+      'The previous revision did not compile. Fix these errors and return the complete corrected script.',
+      ...errors.map(
+        (issue) =>
+          `${issue.line != null ? `line ${issue.line}: ` : ''}${issue.message}`,
+      ),
+    ].join('\n')
+  }
+
+  return { source: candidate, errors, attempts: maxAttempts }
 }

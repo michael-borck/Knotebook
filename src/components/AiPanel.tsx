@@ -5,6 +5,7 @@ import type { Issue } from '../lib/types'
 import {
   PROVIDER_DEFAULTS,
   generateInk,
+  generateWithRetry,
   loadAiSettings,
   saveAiSettings,
   type AiProvider,
@@ -22,6 +23,7 @@ interface AiPanelProps {
   bible: StoryBible
   snapshotKey: string
   issues: Issue[]
+  validate: (source: string) => Issue[]
   onApply: (source: string) => void
 }
 
@@ -32,6 +34,7 @@ export default function AiPanel({
   bible,
   snapshotKey,
   issues,
+  validate,
   onApply,
 }: AiPanelProps) {
   const [settings, setSettings] = useState<AiSettings>(() => loadAiSettings())
@@ -40,6 +43,8 @@ export default function AiPanel({
   const [status, setStatus] = useState<Status>('idle')
   const [error, setError] = useState<string | null>(null)
   const [proposal, setProposal] = useState<string | null>(null)
+  const [attempt, setAttempt] = useState(0)
+  const [retryNote, setRetryNote] = useState<string | null>(null)
   const [snapshots, setSnapshots] = useState<Snapshot[]>(() =>
     loadSnapshots(snapshotKey),
   )
@@ -51,6 +56,8 @@ export default function AiPanel({
     setProposal(null)
     setStatus('idle')
     setError(null)
+    setAttempt(0)
+    setRetryNote(null)
   }, [snapshotKey])
 
   const diff = useMemo(
@@ -92,21 +99,40 @@ export default function AiPanel({
     setStatus('running')
     setError(null)
     setProposal(null)
+    setAttempt(0)
+    setRetryNote(null)
     const controller = new AbortController()
     abortRef.current = controller
     try {
-      const next = await generateInk({
-        settings,
-        bible,
-        source,
-        instruction: task,
+      const result = await generateWithRetry(source, task, {
+        maxAttempts: 3,
+        generate: (candidate, feedback) =>
+          generateInk({
+            settings,
+            bible,
+            source: candidate,
+            instruction: feedback,
+            signal: controller.signal,
+          }),
+        validate,
+        onAttempt: (nextAttempt) => {
+          setAttempt(nextAttempt)
+          setStatus('running')
+          setRetryNote(nextAttempt > 1 ? `Attempt ${nextAttempt} of 3` : null)
+        },
         signal: controller.signal,
       })
-      setProposal(next)
+      setProposal(result.source)
       setStatus('ready')
+      setRetryNote(
+        result.errors.length > 0
+          ? `Still ${result.errors.length} compile error${result.errors.length === 1 ? '' : 's'} after ${result.attempts} attempt${result.attempts === 1 ? '' : 's'}.`
+          : null,
+      )
     } catch (err) {
       if (controller.signal.aborted) {
         setStatus('idle')
+        setRetryNote(null)
         return
       }
       setStatus('error')
@@ -123,12 +149,16 @@ export default function AiPanel({
     setProposal(null)
     setStatus('idle')
     setError(null)
+    setAttempt(0)
+    setRetryNote(null)
   }
 
   const discard = () => {
     setProposal(null)
     setStatus('idle')
     setError(null)
+    setAttempt(0)
+    setRetryNote(null)
   }
 
   const restore = (snapshot: Snapshot) => {
@@ -137,6 +167,8 @@ export default function AiPanel({
     setProposal(null)
     setStatus('idle')
     setError(null)
+    setAttempt(0)
+    setRetryNote(null)
   }
 
   const fixErrors = () => {
@@ -260,7 +292,12 @@ export default function AiPanel({
       </div>
 
       {error && <p className="ai-error">{error}</p>}
-      {running && <p className="ai-status">Waiting for the model…</p>}
+      {running && (
+        <p className="ai-status">
+          Attempt {Math.max(1, attempt)} of 3 — waiting for the model…
+        </p>
+      )}
+      {retryNote && !running && <p className="ai-warning">{retryNote}</p>}
 
       {proposal && (
         <section className="ai-proposal">

@@ -8,7 +8,7 @@ import { DEFAULT_BIBLE } from '../src/lib/bible'
 import { buildPack, parsePack } from '../src/lib/pack'
 import { parseGraph } from '../src/lib/graph'
 import { compareVersions } from '../src/lib/version'
-import { extractInk } from '../src/lib/ai'
+import { extractInk, generateWithRetry } from '../src/lib/ai'
 import { CATALOGUE_FORMAT, parseCatalogue, sha256Hex, verifyPackSignature } from '../src/lib/catalogue'
 
 const failures: string[] = []
@@ -86,6 +86,38 @@ check(
   extractInk('=== start ===\nHi\n-> END')?.includes('=== start ===') === true,
 )
 check('extractInk rejects prose', extractInk('Sure, here is a story.') === null)
+
+const retryCalls: string[] = []
+const retryResult = await generateWithRetry('original', 'fix it', {
+  maxAttempts: 3,
+  generate: async (candidate) => {
+    retryCalls.push(candidate)
+    return candidate === 'original' ? 'invalid' : 'valid'
+  },
+  validate: (candidate) =>
+    candidate === 'invalid'
+      ? [{ severity: 'error' as const, message: 'bad', source: 'ink' as const }]
+      : [],
+})
+check(
+  'ai retry recovers',
+  retryResult.attempts === 2 &&
+    retryResult.source === 'valid' &&
+    retryResult.errors.length === 0 &&
+    retryCalls[1] === 'invalid',
+)
+
+const alwaysBad = await generateWithRetry('original', 'fix', {
+  maxAttempts: 2,
+  generate: async () => 'invalid',
+  validate: () => [
+    { severity: 'error' as const, message: 'bad', source: 'ink' as const },
+  ],
+})
+check(
+  'ai retry stops',
+  alwaysBad.attempts === 2 && alwaysBad.errors.length === 1,
+)
 const parsedPack = parsePack(JSON.stringify(pack))
 check('pack round-trips', parsedPack.pack?.title === 'Smoke Pack')
 check('pack rejects junk', parsePack('{"nope":true}').pack === null)

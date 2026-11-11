@@ -782,6 +782,12 @@
   white-space: pre-wrap;
 }
 
+.ai-warning {
+  margin: 0;
+  color: var(--warning);
+  font-size: 12px;
+}
+
 .ai-note {
   margin: 8px 0 0;
   color: var(--muted);
