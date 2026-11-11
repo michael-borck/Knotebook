@@ -1,6 +1,6 @@
 [package]
 name = "knotebook"
-version = "0.1.2"
+version = "0.1.3"
 description = "Knotebook — an LLM-friendly interactive fiction studio"
 authors = ["Michael Borck"]
 license = ""
