@@ -1,0 +1,275 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Knotebook — write, map, and publish branching stories</title>
+    <meta
+      name="description"
+      content="An LLM-friendly studio and offline player for interactive fiction, built on ink."
+    />
+    <meta name="theme-color" content="#101117" />
+    <link rel="icon" type="image/svg+xml" href="favicon.svg" />
+    <link rel="stylesheet" href="style.css" />
+  </head>
+  <body>
+    <header class="topbar">
+      <a class="brand" href="./">
+        <img src="favicon.svg" alt="" width="24" height="24" />
+        <span>Knotebook</span>
+      </a>
+      <nav class="nav">
+        <a href="#features">Features</a>
+        <a href="#downloads">Downloads</a>
+        <a href="https://michael-borck.github.io/knotebook-store/">Store</a>
+        <a href="https://github.com/michael-borck/Knotebook">GitHub</a>
+      </nav>
+    </header>
+
+    <main>
+      <section class="hero">
+        <div class="hero-copy">
+          <p class="eyebrow">Studio + Player for ink</p>
+          <h1>Write branching stories.<br />See the shape. Ship them.</h1>
+          <p class="lede">
+            Knotebook is an LLM-friendly studio and offline player for interactive
+            fiction. Write in ink, map every knot and stitch, build self-contained
+            packs, and publish them.
+          </p>
+          <div class="actions">
+            <a class="button primary" href="app/">Try in browser</a>
+            <a
+              class="button download"
+              id="primary-download"
+              href="https://github.com/michael-borck/Knotebook/releases/latest"
+            >
+              <span id="primary-download-label">Download Knotebook</span>
+              <span class="meta" id="primary-download-meta"
+                >Choose your platform</span
+              >
+            </a>
+            <a class="button ghost" href="app/?player=1">Open the reader</a>
+          </div>
+          <p class="fineprint">Free · macOS, Windows, Linux · No account</p>
+        </div>
+
+        <div class="hero-art" aria-hidden="true">
+          <div class="map-card">
+            <div class="map-head">
+              <span>knot map</span>
+              <span class="map-count">7 knots · 1/7 covered</span>
+            </div>
+            <svg viewBox="0 0 440 300" class="map-svg">
+              <defs>
+                <marker
+                  id="arrow"
+                  viewBox="0 0 10 10"
+                  refX="9"
+                  refY="5"
+                  markerWidth="6"
+                  markerHeight="6"
+                  orient="auto-start-reverse"
+                >
+                  <path d="M 0 0 L 10 5 L 0 10 z" fill="#6b7085" />
+                </marker>
+              </defs>
+              <path
+                class="edge"
+                d="M120 70 C 160 70, 180 120, 220 120"
+                marker-end="url(#arrow)"
+              />
+              <path
+                class="edge"
+                d="M120 70 C 160 70, 180 190, 220 190"
+                marker-end="url(#arrow)"
+              />
+              <path
+                class="edge"
+                d="M300 120 C 340 120, 350 80, 380 80"
+                marker-end="url(#arrow)"
+              />
+              <path
+                class="edge"
+                d="M300 190 C 340 190, 350 220, 380 220"
+                marker-end="url(#arrow)"
+              />
+              <path
+                class="edge missing-edge"
+                d="M300 190 C 330 190, 350 160, 380 160"
+                marker-end="url(#arrow)"
+              />
+              <g class="node entry">
+                <rect x="40" y="46" width="100" height="48" rx="9" />
+                <text x="90" y="66">start</text>
+                <text class="node-meta" x="90" y="82">entry</text>
+              </g>
+              <g class="node covered">
+                <rect x="240" y="96" width="100" height="48" rx="9" />
+                <circle cx="256" cy="112" r="4" />
+                <text x="290" y="116">climb</text>
+                <text class="node-meta" x="290" y="132">covered</text>
+              </g>
+              <g class="node">
+                <rect x="240" y="166" width="100" height="48" rx="9" />
+                <text x="290" y="186">shore</text>
+                <text class="node-meta" x="290" y="202">5 knots</text>
+              </g>
+              <g class="node dead">
+                <rect x="360" y="56" width="60" height="48" rx="9" />
+                <text x="390" y="76">walk</text>
+                <text class="node-meta" x="390" y="92">dead end</text>
+              </g>
+              <g class="node">
+                <rect x="360" y="196" width="60" height="48" rx="9" />
+                <text x="390" y="216">keep</text>
+                <text class="node-meta" x="390" y="232">reach</text>
+              </g>
+              <g class="node missing">
+                <rect x="360" y="136" width="60" height="48" rx="9" />
+                <text x="390" y="156">light</text>
+                <text class="node-meta" x="390" y="172">missing</text>
+              </g>
+            </svg>
+            <div class="map-legend">
+              <span><i class="dot entry"></i>entry</span>
+              <span><i class="dot covered"></i>covered</span>
+              <span><i class="dot dead"></i>dead end</span>
+              <span><i class="dot missing"></i>missing</span>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section id="features" class="features">
+        <h2>Everything from first line to shipped story</h2>
+        <div class="feature-grid">
+          <article>
+            <h3>Write in ink</h3>
+            <p>
+              Plain-text ink with live compile, error highlighting, jump-to-line,
+              and a story bible that feeds an LLM.
+            </p>
+          </article>
+          <article>
+            <h3>See the shape</h3>
+            <p>
+              A knot and stitch map with coverage, dead ends, and unreachable
+              branches. Click a node to jump to its source.
+            </p>
+          </article>
+          <article>
+            <h3>Build packs</h3>
+            <p>
+              Self-contained packs with compiled ink, assets, covers, and themes.
+              Sign a catalogue and publish it anywhere.
+            </p>
+          </article>
+          <article>
+            <h3>Play offline</h3>
+            <p>
+              The PWA and desktop apps install packs, save progress, and work
+              without a connection.
+            </p>
+          </article>
+        </div>
+      </section>
+
+      <section id="downloads" class="downloads">
+        <div class="downloads-head">
+          <div>
+            <h2>Download Knotebook</h2>
+            <p class="muted">
+              macOS builds are signed and notarized. Windows and Linux are
+              unsigned for now.
+            </p>
+          </div>
+          <a
+            class="button ghost"
+            href="https://github.com/michael-borck/Knotebook/releases/latest"
+            >All releases</a
+          >
+        </div>
+        <div class="download-grid">
+          <a
+            id="dl-mac-arm"
+            class="download-card"
+            href="https://github.com/michael-borck/Knotebook/releases/latest"
+            ><strong>macOS</strong><span>Apple silicon · DMG</span></a
+          >
+          <a
+            id="dl-mac-x64"
+            class="download-card"
+            href="https://github.com/michael-borck/Knotebook/releases/latest"
+            ><strong>macOS</strong><span>Intel · DMG</span></a
+          >
+          <a
+            id="dl-win-exe"
+            class="download-card"
+            href="https://github.com/michael-borck/Knotebook/releases/latest"
+            ><strong>Windows</strong><span>Installer · EXE</span></a
+          >
+          <a
+            id="dl-win-msi"
+            class="download-card"
+            href="https://github.com/michael-borck/Knotebook/releases/latest"
+            ><strong>Windows</strong><span>MSI</span></a
+          >
+          <a
+            id="dl-linux-appimage"
+            class="download-card"
+            href="https://github.com/michael-borck/Knotebook/releases/latest"
+            ><strong>Linux</strong><span>AppImage</span></a
+          >
+          <a
+            id="dl-linux-deb"
+            class="download-card"
+            href="https://github.com/michael-borck/Knotebook/releases/latest"
+            ><strong>Linux</strong><span>.deb</span></a
+          >
+        </div>
+        <p class="fineprint" id="release-note">
+          Latest release: <span id="release-version">loading…</span>
+        </p>
+      </section>
+
+      <section class="cta">
+        <div>
+          <h2>Try it without installing</h2>
+          <p class="muted">
+            The studio and reader run entirely in the browser. No account, no
+            server.
+          </p>
+        </div>
+        <div class="actions">
+          <a class="button primary" href="app/">Open the studio</a>
+          <a class="button ghost" href="app/?view=map">See the knot map</a>
+        </div>
+      </section>
+    </main>
+
+    <footer class="footer">
+      <span
+        >Knotebook — built on
+        <a href="https://www.inklestudios.com/ink/">ink</a></span
+      >
+      <nav>
+        <a href="https://github.com/michael-borck/Knotebook">GitHub</a>
+        <a href="https://github.com/michael-borck/Knotebook/blob/main/docs/PLAN.md"
+          >Docs</a
+        >
+        <a href="https://michael-borck.github.io/knotebook-store/">Store</a>
+      </nav>
+    </footer>
+
+    <noscript>
+      <p class="noscript">
+        Downloads need JavaScript. Browse releases at
+        <a href="https://github.com/michael-borck/Knotebook/releases/latest"
+          >GitHub Releases</a
+        >.
+      </p>
+    </noscript>
+
+    <script src="app.js"></script>
+  </body>
+</html>

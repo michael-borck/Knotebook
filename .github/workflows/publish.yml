@@ -22,10 +22,16 @@ jobs:
           node-version: 22
           cache: npm
       - run: npm ci
-      - name: Build (Pages subpath)
+      - name: Build app (relative base)
         run: npm run build
         env:
-          PAGES_BASE: /knotebook-site/
+          PAGES_BASE: ./
+      - name: Assemble site
+        run: |
+          mkdir -p _site/app
+          cp -R landing/. _site/
+          cp -R dist/. _site/app/
+          touch _site/.nojekyll
       - uses: webfactory/ssh-agent@v0.9.0
         with:
           ssh-private-key: ${{ secrets.SITE_SSH_KEY }}
@@ -36,7 +42,7 @@ jobs:
       - name: Publish to site repo
         run: |
           git clone --depth 1 git@github.com:michael-borck/knotebook-site.git site
-          rm -rf site/assets site/icons
+          rm -rf site/assets site/icons site/app
           rm -f \
             site/index.html \
             site/manifest.webmanifest \
@@ -46,8 +52,7 @@ jobs:
             site/catalogue.json \
             site/sample.knotebook.json \
             site/.nojekyll
-          cp -R dist/. site/
-          touch site/.nojekyll
+          cp -R _site/. site/
           cd site
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"

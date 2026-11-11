@@ -145,11 +145,13 @@ exporters for a constrained subset.
 
 **Implemented so far:** the PWA is published to the public `knotebook-site` repo;
 pushes to `main` build and publish automatically via GitHub Actions with an SSH
-deploy key. A tag-gated `release.yml` builds macOS (signed + notarized), Windows
-and Linux (unsigned) and creates a draft release, following the app-hq Tauri
-signing pattern. Tauri auto-update and the per-app updater key are still to do.
-A manual `notarize-check` workflow verifies signing credentials without creating
-a release.
+deploy key. The site now has a landing page at the root and the app/player at
+`/app/`, with platform-aware download links to GitHub releases and the
+`knotebook.borck.education` custom domain. A tag-gated `release.yml` builds macOS
+(signed + notarized), Windows and Linux (unsigned) and creates a draft release,
+following the app-hq Tauri signing pattern. Tauri auto-update and the per-app
+updater key are still to do. A manual `notarize-check` workflow verifies signing
+credentials without creating a release.
 
 ### Phase 6 — polish
 Icon, signing/notarization, GitHub Actions release workflow, docs,

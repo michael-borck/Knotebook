@@ -5,20 +5,25 @@ An LLM-friendly **studio and player** for branching stories, built on
 
 ## Live
 
-- **App / Player** — https://michael-borck.github.io/knotebook-site/
-- **Player directly** — https://michael-borck.github.io/knotebook-site/?player=1
+- **Landing** — https://knotebook.borck.education/
+- **App / Player** — https://knotebook.borck.education/app/
+- **Player directly** — https://knotebook.borck.education/app/?player=1
 - **Store** — https://michael-borck.github.io/knotebook-store/
+- **Releases** — https://github.com/michael-borck/Knotebook/releases
 - **Submissions** — https://github.com/michael-borck/knotebook-packs
 
-The app source stays private; the built site is published to the public
-[`knotebook-site`](https://github.com/michael-borck/knotebook-site) repo.
-Pushes to `main` publish automatically via
+The source repo is public. The site is generated from `landing/` (landing page)
+and the Vite build at `/app/`, then published to the public
+[`knotebook-site`](https://github.com/michael-borck/knotebook-site) repo. Pushes
+to `main` publish automatically via
 [`.github/workflows/publish.yml`](.github/workflows/publish.yml) (an SSH deploy
 key scoped to `knotebook-site`). Manual publish:
 
 ```bash
 npm run deploy:site
 ```
+
+Custom domain: CNAME `knotebook` → `michael-borck.github.io` (DNS-only, no proxy).
 
 Knotebook is two apps in one codebase:
 
@@ -36,7 +41,8 @@ Tauri 2 · React 19 · Vite 8 · CodeMirror 6 · inkjs · TweetNaCl.
 
 ## Releases
 
-- **PWA** — every push to `main` publishes to the site repo.
+- **Landing + PWA** — every push to `main` publishes the landing page and the
+  app/player at `/app/`.
 - **Desktop** — push a tag `vX.Y.Z` (matching `package.json` and
   `src-tauri/tauri.conf.json`). `.github/workflows/release.yml` builds macOS
   (signed + notarized), Windows and Linux (unsigned) and creates a **draft**
