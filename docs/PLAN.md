@@ -149,9 +149,11 @@ deploy key. The site now has a landing page at the root and the app/player at
 `/app/`, with platform-aware download links to GitHub releases and the
 `knotebook.borck.education` custom domain. A tag-gated `release.yml` builds macOS
 (signed + notarized), Windows and Linux (unsigned) and creates a draft release,
-following the app-hq Tauri signing pattern. Tauri auto-update and the per-app
-updater key are still to do. A manual `notarize-check` workflow verifies signing
-credentials without creating a release.
+following the app-hq Tauri signing pattern. **Auto-update is wired from
+v0.1.1**: the app checks `releases/latest/download/latest.json`, downloads
+signed updater artifacts and prompts to install and restart. The per-app updater
+public key is in `tauri.conf.json`. A manual `notarize-check` workflow verifies
+signing credentials without creating a release.
 
 ### Phase 6 — polish
 Icon, signing/notarization, GitHub Actions release workflow, docs,

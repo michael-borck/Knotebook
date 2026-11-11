@@ -38,6 +38,8 @@ jobs:
       APPLE_API_KEY: ${{ secrets.APPLE_API_KEY }}
       APPLE_API_ISSUER: ${{ secrets.APPLE_API_ISSUER }}
       APPLE_API_KEY_CONTENT: ${{ secrets.APPLE_API_KEY_CONTENT }}
+      TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
+      TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
     steps:
       - uses: actions/checkout@v4
 
@@ -79,6 +81,14 @@ jobs:
 
       - run: npm ci
 
+      - name: Require updater key
+        shell: bash
+        run: |
+          if [ -z "${TAURI_SIGNING_PRIVATE_KEY}" ]; then
+            echo "::error::Missing TAURI_SIGNING_PRIVATE_KEY. Add the per-app updater key secret."
+            exit 1
+          fi
+
       - name: Require Apple credentials
         if: matrix.platform == 'macos-latest'
         shell: bash
@@ -118,8 +128,11 @@ jobs:
 
             macOS builds are signed and notarized. Windows and Linux builds are
             unsigned for now.
+
+            Auto-update is supported from v0.1.1 onward.
           releaseDraft: true
           prerelease: false
+          includeUpdaterJson: true
           args: ${{ matrix.args }}
 
       - name: Verify macOS signature

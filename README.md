@@ -55,8 +55,14 @@ git push origin v0.1.0
 
 Apple signing uses the canonical secrets from the app-hq signing runbook
 (`APPLE_CERTIFICATE`, `APPLE_CERTIFICATE_PASSWORD`, `APPLE_SIGNING_IDENTITY`,
-`APPLE_API_KEY`, `APPLE_API_ISSUER`, `APPLE_API_KEY_CONTENT`). Tauri updater keys
-are per app and are not configured yet.
+`APPLE_API_KEY`, `APPLE_API_ISSUER`, `APPLE_API_KEY_CONTENT`).
+
+Auto-update is wired from **v0.1.1**: the app checks
+`releases/latest/download/latest.json`, verifies signed updater artifacts, and
+prompts to install and restart. The updater key is **per app** (never shared):
+the public key lives in `src-tauri/tauri.conf.json`; the private key and
+password are `TAURI_SIGNING_PRIVATE_KEY` / `TAURI_SIGNING_PRIVATE_KEY_PASSWORD`
+secrets. Back them up — losing them breaks updates for installed apps.
 
 To test signing credentials without publishing, run the **Notarize check**
 workflow manually. It builds, signs and notarizes one macOS arch and verifies it
@@ -107,6 +113,16 @@ npm run desktop:dev
 
 `CARGO_TARGET_DIR` is pointed at local APFS by those scripts. Moving the repo to
 a local APFS disk removes both workarounds.
+
+For a local desktop **release** build (`npm run desktop:build`), export the
+updater key, because `createUpdaterArtifacts` signs the update bundle:
+
+```bash
+export TAURI_SIGNING_PRIVATE_KEY="$(cat ~/.tauri/knotebook-updater.key)"
+export TAURI_SIGNING_PRIVATE_KEY_PASSWORD="$(cat ~/.tauri/knotebook-updater.password)"
+```
+
+`tauri dev` doesn't bundle, so it doesn't need the key.
 
 ## License
 
