@@ -7,6 +7,7 @@ import { countWords, lintInk } from '../src/lib/lint'
 import { DEFAULT_BIBLE } from '../src/lib/bible'
 import { buildPack, parsePack } from '../src/lib/pack'
 import { parseGraph } from '../src/lib/graph'
+import { compareVersions } from '../src/lib/version'
 import { CATALOGUE_FORMAT, parseCatalogue, sha256Hex, verifyPackSignature } from '../src/lib/catalogue'
 
 const failures: string[] = []
@@ -60,6 +61,19 @@ const pack = buildPack({
   storyJson: compiled.json,
 })
 check('pack builds', pack.id === 'smoke-pack' && pack.stories.length === 1)
+check('pack has release', pack.release === '1.0.0')
+const legacyPack = { ...pack } as Record<string, unknown>
+delete legacyPack.release
+check(
+  'legacy pack defaults release',
+  parsePack(JSON.stringify(legacyPack)).pack?.release === '1.0.0',
+)
+check(
+  'version compare',
+  compareVersions('1.0.1', '1.0.0') > 0 &&
+    compareVersions('1.0.0', '1.0.0') === 0 &&
+    compareVersions('0.9.0', '1.0.0') < 0,
+)
 const parsedPack = parsePack(JSON.stringify(pack))
 check('pack round-trips', parsedPack.pack?.title === 'Smoke Pack')
 check('pack rejects junk', parsePack('{"nope":true}').pack === null)

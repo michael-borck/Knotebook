@@ -8,6 +8,7 @@ export interface CatalogueEntry {
   title: string
   author: string
   theme: string
+  release?: string
   sha256: string
   url: string
   description?: string
@@ -30,6 +31,7 @@ function isEntry(value: unknown): value is CatalogueEntry {
     typeof entry.id === 'string' &&
     typeof entry.title === 'string' &&
     typeof entry.theme === 'string' &&
+    (entry.release === undefined || typeof entry.release === 'string') &&
     typeof entry.sha256 === 'string' &&
     typeof entry.url === 'string' &&
     (entry.signature === undefined || typeof entry.signature === 'string')

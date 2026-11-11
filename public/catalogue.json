@@ -1,7 +1,7 @@
 {
   "format": "knotebook-catalogue",
   "version": 1,
-  "generated": "2026-11-10T00:28:40.601Z",
+  "generated": "2026-11-11T02:53:58.433Z",
   "publicKey": "oueMhcTC2rw/7cxgAVsws6msxx7EYGKG0hw0fmhZ4wE=",
   "packs": [
     {
@@ -9,11 +9,12 @@
       "title": "The Lantern Keepers",
       "author": "Knotebook",
       "theme": "noir",
-      "sha256": "af601b0d157093b21f2a7615782ab7eba84a9bffe6bda1462ac674bee1c94494",
+      "release": "1.0.0",
+      "sha256": "eabd72ec43e8336afdeab55205d40f5a1003cb2d0bcd2e29ae1ab4db50fc26d3",
       "url": "sample.knotebook.json",
       "description": "Demo pack generated from the sample story.",
       "licence": "CC BY 4.0",
-      "signature": "Enhe1xPKE1JZOE2GBxGOdw6scT+dQU+ZStgImYkwn0k2jQ+LJKFWWrirztqEGuMfAgp2AvBd0k2iPkmYLWSdBA=="
+      "signature": "K8OduUeigjDlX1FQcM4ibypl0182kH/8BZF4oiPQq5u3KI0qyv2+rnyHdRI7wj8Z+VVmg4YC7S877WsNDjQ/DA=="
     }
   ]
 }

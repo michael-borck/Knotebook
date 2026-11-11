@@ -10,6 +10,7 @@ export interface LibraryEntry {
   title: string
   author: string
   theme: string
+  release: string
   installed: string
   cover?: string
 }
@@ -85,6 +86,7 @@ export async function listLibrary(): Promise<LibraryEntry[]> {
       title: pack.title,
       author: pack.author,
       theme: pack.theme,
+      release: pack.release ?? '1.0.0',
       installed,
       cover: pack.cover,
     }))
@@ -101,6 +103,7 @@ export async function installPack(pack: Pack): Promise<LibraryEntry> {
     title: pack.title,
     author: pack.author,
     theme: pack.theme,
+    release: pack.release,
     installed,
     cover: pack.cover,
   }

@@ -10,6 +10,7 @@ export interface BibleKnot {
 
 export interface StoryBible {
   title: string
+  release: string
   theme: string
   premise: string
   tone: string
@@ -21,6 +22,7 @@ export interface StoryBible {
 
 export const DEFAULT_BIBLE: StoryBible = {
   title: 'The Lantern Keepers',
+  release: '1.0.0',
   theme: 'noir',
   premise: 'A short branching story used to test Knotebook.',
   tone: 'Warm, conversational, second person.',

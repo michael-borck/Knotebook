@@ -54,6 +54,7 @@ const packs = collect(dir)
       title?: string
       author?: string
       theme?: string
+      release?: string
       description?: string
       licence?: string
     }
@@ -78,6 +79,7 @@ const packs = collect(dir)
       title: pack.title,
       author: pack.author ?? '',
       theme: pack.theme ?? 'base',
+      release: pack.release ?? '1.0.0',
       sha256,
       url,
       description: pack.description,

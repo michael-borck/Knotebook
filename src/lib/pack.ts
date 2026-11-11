@@ -12,6 +12,7 @@ export interface PackStory {
 export interface Pack {
   format: typeof PACK_FORMAT
   version: number
+  release: string
   id: string
   title: string
   author: string
@@ -26,6 +27,7 @@ export interface Pack {
 
 export interface BuildPackInput {
   title: string
+  release?: string
   author?: string
   licence?: string
   description?: string
@@ -50,6 +52,7 @@ export function buildPack(input: BuildPackInput): Pack {
   return {
     format: PACK_FORMAT,
     version: PACK_VERSION,
+    release: input.release?.trim() || '1.0.0',
     id: slugify(title),
     title,
     author: input.author?.trim() ?? '',
@@ -72,6 +75,7 @@ export function isPack(value: unknown): value is Pack {
     typeof pack.id === 'string' &&
     typeof pack.title === 'string' &&
     typeof pack.theme === 'string' &&
+    (pack.release === undefined || typeof pack.release === 'string') &&
     (pack.cover === undefined || typeof pack.cover === 'string') &&
     (pack.assets === undefined ||
       (typeof pack.assets === 'object' &&
@@ -102,5 +106,15 @@ export function parsePack(text: string): {
   if (!isPack(value)) {
     return { pack: null, error: 'That file is not a Knotebook pack.' }
   }
-  return { pack: value, error: null }
+  const pack = value as Pack
+  return {
+    pack: {
+      ...pack,
+      release:
+        typeof pack.release === 'string' && pack.release.trim()
+          ? pack.release
+          : '1.0.0',
+    },
+    error: null,
+  }
 }

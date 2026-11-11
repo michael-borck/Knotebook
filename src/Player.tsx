@@ -19,6 +19,7 @@ import {
   type CatalogueEntry,
 } from './lib/catalogue'
 import { firstImageTag } from './lib/tags'
+import { compareVersions } from './lib/version'
 import {
   clearProgress,
   installPack,
@@ -339,7 +340,9 @@ export default function Player() {
                     {entry.cover && (
                       <img className="pack-cover" src={entry.cover} alt="" />
                     )}
-                    <div className="pack-theme">{entryTheme.title}</div>
+                    <div className="pack-theme">
+                      {entryTheme.title} · v{entry.release}
+                    </div>
                     <h2>{entry.title}</h2>
                     <p className="muted">{entry.author || 'Unknown author'}</p>
                     <div className="pack-actions">
@@ -393,7 +396,19 @@ export default function Player() {
           {catalogue && catalogue.packs.length > 0 && (
             <ul className="pack-grid">
               {catalogue.packs.map((entry) => {
-                const installed = library.some((item) => item.id === entry.id)
+                const installedEntry = library.find(
+                  (item) => item.id === entry.id,
+                )
+                const catalogueRelease = entry.release ?? '1.0.0'
+                const hasUpdate = installedEntry
+                  ? compareVersions(catalogueRelease, installedEntry.release) > 0
+                  : false
+                const upToDate = installedEntry?.release === catalogueRelease
+                const action = !installedEntry
+                  ? 'Install'
+                  : hasUpdate
+                    ? 'Update'
+                    : 'Reinstall'
                 const entryTheme = getTheme(entry.theme)
                 return (
                   <li
@@ -401,7 +416,12 @@ export default function Player() {
                     className="pack-card"
                     style={{ borderColor: entryTheme.accent }}
                   >
-                    <div className="pack-theme">{entryTheme.title}</div>
+                    <div className="pack-theme">
+                      {entryTheme.title} · v{catalogueRelease}
+                      {installedEntry
+                        ? ` · installed v${installedEntry.release}`
+                        : ''}
+                    </div>
                     <h2>{entry.title}</h2>
                     <p className="muted">{entry.author || 'Unknown author'}</p>
                     {entry.description && (
@@ -413,13 +433,16 @@ export default function Player() {
                         disabled={installing === entry.id}
                         onClick={() => void installFromStore(entry)}
                       >
-                        {installing === entry.id
-                          ? 'Installing…'
-                          : installed
-                            ? 'Reinstall'
-                            : 'Install'}
+                        {installing === entry.id ? 'Installing…' : action}
                       </button>
-                      {installed && <span className="installed">Installed</span>}
+                      {upToDate && (
+                        <span className="installed">Up to date</span>
+                      )}
+                      {hasUpdate && (
+                        <span className="update-available">
+                          Update available
+                        </span>
+                      )}
                     </div>
                   </li>
                 )

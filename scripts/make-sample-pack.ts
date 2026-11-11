@@ -15,6 +15,7 @@ const titleMatch = source.match(/^#\s*title:\s*(.+)$/im)
 const title = titleMatch ? titleMatch[1].trim() : 'The Lantern Keepers'
 const pack = buildPack({
   title,
+  release: '1.0.0',
   author: 'Knotebook',
   theme: 'noir',
   description: 'Demo pack generated from the sample story.',
@@ -51,6 +52,7 @@ const catalogue = {
       title: pack.title,
       author: pack.author,
       theme: pack.theme,
+      release: pack.release,
       sha256,
       url: 'sample.knotebook.json',
       description: pack.description,

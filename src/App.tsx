@@ -516,6 +516,7 @@ function App() {
     const { assetData, cover } = await collectProjectAssets()
     const pack = buildPack({
       title,
+      release: bible.release,
       author,
       description: bible.premise,
       theme: bible.theme,
@@ -545,7 +546,9 @@ function App() {
   const handleApplyBible = () => {
     try {
       const parsed = JSON.parse(bibleText) as StoryBible
-      setBible(parsed)
+      const next = { ...parsed, release: parsed.release ?? '1.0.0' }
+      setBible(next)
+      setBibleText(JSON.stringify(next, null, 2))
       setBibleError(null)
       setToast('Story bible applied')
     } catch (error) {
