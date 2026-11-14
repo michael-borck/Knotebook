@@ -150,7 +150,7 @@ export default function AiPanel({
       setStatus('ready')
       setRetryNote(
         result.errors.length > 0
-          ? `Still ${result.errors.length} compile error${result.errors.length === 1 ? '' : 's'} after ${result.attempts} attempt${result.attempts === 1 ? '' : 's'}.`
+          ? `Still ${result.errors.length} error${result.errors.length === 1 ? '' : 's'} after ${result.attempts} attempt${result.attempts === 1 ? '' : 's'}.`
           : null,
       )
     } catch (err) {
@@ -206,7 +206,7 @@ export default function AiPanel({
       .join('\n')
     setScope('')
     void runWith(
-      `Fix the following ink compile errors and return the complete corrected script. Keep everything else stable.\n${list}`,
+      `Fix the following errors and return the complete corrected script. Keep everything else stable.\n${list}`,
       '',
     )
   }
@@ -339,7 +339,7 @@ export default function AiPanel({
         )}
         {errors.length > 0 && !running && (
           <button type="button" className="ghost" onClick={fixErrors}>
-            Fix {errors.length} compile error
+            Fix {errors.length} error
             {errors.length === 1 ? '' : 's'}
           </button>
         )}

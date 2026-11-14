@@ -253,7 +253,7 @@ function App() {
             rootFile: activeFile,
           }
         : undefined
-    return compileInk(candidate, input).issues
+    return [...compileInk(candidate, input).issues, ...lintInk(candidate, bible)]
   }
 
   const knotOptions = useMemo(

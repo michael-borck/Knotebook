@@ -189,7 +189,7 @@ export async function generateWithRetry(
     feedback = [
       instruction,
       '',
-      'The previous revision did not compile. Fix these errors and return the complete corrected script.',
+      'The previous revision had errors. Fix them and return the complete corrected script.',
       ...errors.map(
         (issue) =>
           `${issue.line != null ? `line ${issue.line}: ` : ''}${issue.message}`,
