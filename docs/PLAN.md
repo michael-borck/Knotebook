@@ -155,13 +155,16 @@ exporters for a constrained subset.
 pushes to `main` build and publish automatically via GitHub Actions with an SSH
 deploy key. The site now has a landing page at the root and the app/player at
 `/app/`, with platform-aware download links to GitHub releases and the
-`knotebook.borck.education` custom domain. A tag-gated `release.yml` builds macOS
-(signed + notarized), Windows and Linux (unsigned) and creates a draft release,
-following the app-hq Tauri signing pattern. **Auto-update is wired from
-v0.1.1**: the app checks `releases/latest/download/latest.json`, downloads
-signed updater artifacts and prompts to install and restart. The per-app updater
-public key is in `tauri.conf.json`. A manual `notarize-check` workflow verifies
-signing credentials without creating a release.
+`knotebook.borck.education` custom domain. A tag-gated `release.yml` runs a
+preflight gate (typecheck, lint, smoke), builds on `macos-15`, Ubuntu 22.04 and
+Windows, signs/notarizes macOS through a shared
+[`apple-signing`](../.github/actions/apple-signing/action.yml) composite action,
+and creates a draft release. Windows and Linux are unsigned. Manual dispatch runs
+the notarize-check only. This follows the app-hq Tauri API-key pattern.
+**Auto-update is wired from v0.1.1**: the app checks
+`releases/latest/download/latest.json`, downloads signed updater artifacts and
+prompts to install and restart. The per-app updater public key is in
+`tauri.conf.json`.
 
 ### Phase 6 — polish
 Icon, signing/notarization, GitHub Actions release workflow, docs,

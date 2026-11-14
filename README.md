@@ -43,13 +43,15 @@ nothing is applied until you click Apply.
 
 - **Providers** — Ollama (default `gemma3:4b`) or any OpenAI-compatible endpoint.
   The API key is stored locally in the browser profile; use a limited-scope key.
+- **Scope** — whole story or a single knot. A knot edit replaces only that knot
+  and preserves everything else.
+- **Automatic retries** — failing revisions are sent back to the model (up to 3
+  attempts) with the compile/lint errors before you review the diff.
 - **Snapshots** — the last 10 versions are kept per project/file; restore from
   the History section.
-- **Fix compile errors** — sends the current compile errors back to the model.
+- **Fix errors** — sends the current compile/lint errors back to the model.
 - **CORS** — Ollama must allow the app origin (`OLLAMA_ORIGINS`); OpenAI's API
   allows browser origins.
-
-Per-knot structured edits and a fully automatic retry loop are still to come.
 
 ## Stack
 
@@ -60,9 +62,12 @@ Tauri 2 · React 19 · Vite 8 · CodeMirror 6 · inkjs · TweetNaCl.
 - **Landing + PWA** — every push to `main` publishes the landing page and the
   app/player at `/app/`.
 - **Desktop** — push a tag `vX.Y.Z` (matching `package.json` and
-  `src-tauri/tauri.conf.json`). `.github/workflows/release.yml` builds macOS
-  (signed + notarized), Windows and Linux (unsigned) and creates a **draft**
-  GitHub release.
+  `src-tauri/tauri.conf.json`). `.github/workflows/release.yml` runs a preflight
+  gate (typecheck, lint, smoke), then builds on `macos-15`, Ubuntu 22.04 and
+  Windows. macOS is signed + notarized; Windows/Linux are unsigned. It creates a
+  **draft** GitHub release.
+- **Notarize check** — run the **Release desktop** workflow manually. It builds,
+  signs and notarizes one macOS arch and verifies it without creating a release.
 
 ```bash
 git tag -a v0.1.0 -m "Knotebook v0.1.0"
@@ -71,7 +76,9 @@ git push origin v0.1.0
 
 Apple signing uses the canonical secrets from the app-hq signing runbook
 (`APPLE_CERTIFICATE`, `APPLE_CERTIFICATE_PASSWORD`, `APPLE_SIGNING_IDENTITY`,
-`APPLE_API_KEY`, `APPLE_API_ISSUER`, `APPLE_API_KEY_CONTENT`).
+`APPLE_TEAM_ID`, `APPLE_API_KEY`, `APPLE_API_ISSUER`, `APPLE_API_KEY_CONTENT`)
+through the reusable composite action in
+[`.github/actions/apple-signing`](.github/actions/apple-signing/action.yml).
 
 Auto-update is wired from **v0.1.1**: the app checks
 `releases/latest/download/latest.json`, verifies signed updater artifacts, and
@@ -79,10 +86,6 @@ prompts to install and restart. The updater key is **per app** (never shared):
 the public key lives in `src-tauri/tauri.conf.json`; the private key and
 password are `TAURI_SIGNING_PRIVATE_KEY` / `TAURI_SIGNING_PRIVATE_KEY_PASSWORD`
 secrets. Back them up — losing them breaks updates for installed apps.
-
-To test signing credentials without publishing, run the **Notarize check**
-workflow manually. It builds, signs and notarizes one macOS arch and verifies it
-with `codesign`, `spctl` and `xcrun stapler`.
 
 ## Quick start
 

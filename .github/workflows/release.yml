@@ -1,8 +1,13 @@
 name: Release desktop
 
+# Tag push  -> preflight -> signed desktop release (draft).
+# Manual    -> notarize-check only (sign, notarize, verify; no release).
+# Signing pattern: app-hq/runbooks/signing.md (Tauri workflow pattern).
+
 on:
   push:
     tags: ['v*']
+  workflow_dispatch:
 
 permissions:
   contents: write
@@ -15,6 +20,7 @@ jobs:
   # Release gate: do not package a tag unless the app builds and the smoke
   # suite passes. Mirrors app-hq/runbooks/release.md.
   preflight:
+    if: github.event_name == 'push'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -29,15 +35,16 @@ jobs:
       - run: npm run build
 
   release:
+    if: github.event_name == 'push'
     needs: preflight
     strategy:
       fail-fast: false
       matrix:
         include:
-          - platform: macos-latest
+          - platform: macos-15
             target: aarch64-apple-darwin
             args: --target aarch64-apple-darwin
-          - platform: macos-latest
+          - platform: macos-15
             target: x86_64-apple-darwin
             args: --target x86_64-apple-darwin
           - platform: ubuntu-22.04
@@ -106,33 +113,8 @@ jobs:
             exit 1
           fi
 
-      - name: Require Apple credentials
-        if: matrix.platform == 'macos-latest'
-        shell: bash
-        run: |
-          missing=0
-          for name in \
-            APPLE_CERTIFICATE \
-            APPLE_CERTIFICATE_PASSWORD \
-            APPLE_SIGNING_IDENTITY \
-            APPLE_API_KEY \
-            APPLE_API_ISSUER \
-            APPLE_API_KEY_CONTENT
-          do
-            if [ -z "${!name}" ]; then
-              echo "::error::Missing $name. Sync secrets with app-hq/scripts/sync-apple-secrets.sh."
-              missing=1
-            fi
-          done
-          exit $missing
-
-      - name: Write App Store Connect key
-        if: matrix.platform == 'macos-latest'
-        shell: bash
-        run: |
-          mkdir -p ~/.appstoreconnect/private_keys
-          printf '%s' "$APPLE_API_KEY_CONTENT" |
-            openssl base64 -d -A > ~/.appstoreconnect/private_keys/AuthKey_${APPLE_API_KEY}.p8
+      - uses: ./.github/actions/apple-signing
+        if: matrix.platform == 'macos-15'
 
       - uses: tauri-apps/tauri-action@v0
         env:
@@ -153,10 +135,73 @@ jobs:
           args: ${{ matrix.args }}
 
       - name: Verify macOS signature
-        if: matrix.platform == 'macos-latest'
+        if: matrix.platform == 'macos-15'
         shell: bash
         run: |
-          APP="src-tauri/target/${{ matrix.target }}/release/bundle/macos/Knotebook.app"
+          DMG=$(ls src-tauri/target/${{ matrix.target }}/release/bundle/dmg/*.dmg | head -1)
+          MNT=$(mktemp -d)
+          trap 'hdiutil detach "$MNT" >/dev/null 2>&1 || true' EXIT
+          hdiutil attach "$DMG" -nobrowse -readonly -mountpoint "$MNT" >/dev/null
+          APP="$MNT/Knotebook.app"
           codesign --verify --deep --strict --verbose=2 "$APP"
           spctl --assess --type execute --verbose=4 "$APP"
           xcrun stapler validate "$APP"
+          ls -lh "$DMG"
+
+  notarize-check:
+    if: github.event_name == 'workflow_dispatch'
+    runs-on: macos-15
+    env:
+      APPLE_CERTIFICATE: ${{ secrets.APPLE_CERTIFICATE }}
+      APPLE_CERTIFICATE_PASSWORD: ${{ secrets.APPLE_CERTIFICATE_PASSWORD }}
+      APPLE_SIGNING_IDENTITY: ${{ secrets.APPLE_SIGNING_IDENTITY }}
+      APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+      APPLE_API_KEY: ${{ secrets.APPLE_API_KEY }}
+      APPLE_API_ISSUER: ${{ secrets.APPLE_API_ISSUER }}
+      APPLE_API_KEY_CONTENT: ${{ secrets.APPLE_API_KEY_CONTENT }}
+      TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
+      TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: aarch64-apple-darwin
+
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: |
+            src-tauri -> target
+
+      - run: npm ci
+
+      - name: Require updater key
+        shell: bash
+        run: |
+          if [ -z "${TAURI_SIGNING_PRIVATE_KEY}" ]; then
+            echo "::error::Missing TAURI_SIGNING_PRIVATE_KEY. Add the per-app updater key secret."
+            exit 1
+          fi
+
+      - uses: ./.github/actions/apple-signing
+
+      - name: Build, sign and notarize
+        run: npx tauri build --target aarch64-apple-darwin --bundles dmg
+
+      - name: Verify signature and notarization
+        shell: bash
+        run: |
+          DMG=$(ls src-tauri/target/aarch64-apple-darwin/release/bundle/dmg/*.dmg | head -1)
+          MNT=$(mktemp -d)
+          trap 'hdiutil detach "$MNT" >/dev/null 2>&1 || true' EXIT
+          hdiutil attach "$DMG" -nobrowse -readonly -mountpoint "$MNT" >/dev/null
+          APP="$MNT/Knotebook.app"
+          codesign --verify --deep --strict --verbose=2 "$APP"
+          spctl --assess --type execute --verbose=4 "$APP"
+          xcrun stapler validate "$APP"
+          ls -lh "$DMG"
